@@ -1,0 +1,23 @@
+{
+  "name": "ia-consultant-book-build",
+  "private": true,
+  "type": "module",
+  "description": "Typst build pipeline for the IA Consultant book. Source of truth remains BOOK.{pt-BR,en}.md.",
+  "scripts": {
+    "render:diagrams": "node scripts/render-mermaid.mjs",
+    "convert:typst": "node scripts/md-to-typst.mjs",
+    "convert:epub": "node scripts/md-to-epub.mjs",
+    "build": "bash scripts/build.sh",
+    "build:pdf": "bash scripts/build.sh --pdf",
+    "build:epub": "bash scripts/build.sh --epub",
+    "watch": "typst watch typst/book.typ dist/book.pdf"
+  },
+  "devDependencies": {
+    "@lesjoursfr/html-to-epub": "^4.1.5",
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "archiver": "^7.0.1",
+    "katex": "^0.16.47",
+    "marked": "^15.0.7",
+    "yauzl": "^2.10.0"
+  }
+}

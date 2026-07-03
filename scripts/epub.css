@@ -1,0 +1,228 @@
+/* EPUB stylesheet — Kit visual system (light theme), adapted for ereaders.
+   Kindle Paperwhite, Apple Books, Kobo, and Calibre all interpret CSS
+   slightly differently — stay conservative: no web fonts (readers ignore /
+   user-override), no fixed pixel sizes, no complex selectors.
+
+   Reference: felipefontoura.com design tokens
+              felipefontoura.com/src/styles/global.css (live light theme).
+   The accent uses ouro-velho (#AD7A14) — the BRIGHT LED amber lives on the
+   cover only (Kit §2.5: amber is a farol, not tinta).
+*/
+
+/* ─── Base body: sans serif (Inter family with platform fallbacks).
+   Kit puts BODY in Inter — readers will override; we just set the
+   fallback chain so default rendering matches the print/web identity.
+*/
+body {
+  font-family: "Inter", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: justify;
+  hyphens: auto;
+  color: #1A1206;            /* text-on-amber tone — warm near-black */
+  background: #FBF8F2;       /* paper warm (gracefully ignored by Kindle dark mode) */
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Headings: serif voice (Newsreader → Georgia fallback) ───────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Newsreader", "Libertinus Serif", Georgia, "Times New Roman", serif;
+  text-align: left;
+  hyphens: none;
+  line-height: 1.12;
+  page-break-after: avoid;
+  letter-spacing: -0.015em;
+}
+h1 {
+  font-size: 1.9em;
+  font-weight: 400;            /* Kit §3.2 — display voice is LIGHT 400, not bold */
+  color: #14120F;
+  page-break-before: always;
+  margin: 1.5em 0 0.5em;
+}
+h2 {
+  font-size: 1.45em;
+  font-weight: 500;
+  color: #14120F;
+  margin: 1.6em 0 0.4em;
+}
+h3 {
+  font-size: 1.18em;
+  font-weight: 500;
+  color: #14120F;
+  margin: 1.4em 0 0.3em;
+}
+h4 {
+  font-size: 1em;
+  font-weight: 500;
+  font-style: italic;
+  color: #14120F;
+  margin: 1.2em 0 0.3em;
+}
+
+/* ─── Body paragraphs ───────────────────────────────────────────── */
+p {
+  margin: 0 0 0.8em 0;
+  text-indent: 0;
+  orphans: 2;
+  widows: 2;
+}
+
+/* ─── Code (Kit ouro-velho left bar) ─────────────────────────── */
+pre {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.85em;
+  line-height: 1.45;
+  background-color: #F0EAE0;   /* bg-muted of the light theme */
+  border-left: 3px solid #AD7A14;  /* ouro-velho stroke */
+  padding: 0.7em 0.9em;
+  margin: 1em 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  page-break-inside: avoid;
+  color: #14120F;
+}
+code {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 0.9em;
+  background-color: #F0EAE0;
+  color: #8C6210;              /* ouro-velho deep — inline code colour per Kit prose */
+  padding: 0.1em 0.3em;
+  border-radius: 2px;
+}
+pre code {
+  background: transparent;
+  color: #14120F;
+  padding: 0;
+}
+
+/* ─── Tables (Kit — separation by rule, not borders) ─────────── */
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  font-size: 0.92em;
+}
+th, td {
+  border-bottom: 1px solid #CFC7BA;
+  padding: 0.45em 0.65em;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-weight: 500;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;   /* Kit §3.4 — mono labels never UPPERCASE */
+  color: #14120F;
+  border-bottom: 1.5px solid #B3A896;
+}
+
+/* ─── Figures ───────────────────────────────────────────────────── */
+figure {
+  margin: 1em 0;
+  text-align: center;
+  page-break-inside: avoid;
+}
+figure img {
+  max-width: 100%;
+  height: auto;
+}
+figcaption {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 0.8em;
+  color: #837B6D;
+  letter-spacing: 0.02em;
+  margin-top: 0.4em;
+}
+
+/* ─── Equations (KaTeX MathML — centred display block) ──────────── */
+.equation {
+  text-align: center;
+  margin: 1.2em 0;
+  page-break-inside: avoid;
+  overflow-x: auto;            /* long formulas scroll instead of clipping */
+}
+.equation math {
+  font-size: 1.05em;
+}
+
+/* ─── Blockquotes (Kit — serif italic, amber bar) ────────────── */
+blockquote {
+  font-family: "Newsreader", "Libertinus Serif", Georgia, serif;
+  margin: 1em 1.2em;
+  padding-left: 0.9em;
+  border-left: 2px solid #AD7A14;
+  color: #14120F;
+  font-style: italic;
+  font-size: 1.05em;
+  line-height: 1.5;
+}
+
+/* ─── Lists ─────────────────────────────────────────────────────── */
+ul, ol {
+  margin: 0.5em 0 0.9em 0;
+  padding-left: 1.5em;
+}
+li {
+  margin-bottom: 0.35em;
+}
+
+/* ─── Links (ouro-velho with dashed underline) ──────────────────── */
+a {
+  color: #AD7A14;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ─── Horizontal rule ───────────────────────────────────────────── */
+hr {
+  border: 0;
+  border-top: 1px solid #CFC7BA;
+  margin: 2em 0;
+}
+
+/* ─── Part divider page ─────────────────────────────────────────── */
+.part-divider {
+  text-align: center;
+  margin-top: 4em;
+  page-break-before: always;
+  page-break-after: always;
+}
+.part-divider .label {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  color: #AD7A14;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;   /* mono label per Kit §3.4 */
+  margin: 0;
+}
+.part-divider .name {
+  font-family: "Newsreader", "Libertinus Serif", Georgia, serif;
+  font-size: 2em;
+  font-weight: 400;            /* serif voice 400 — editorial / atemporal */
+  color: #14120F;
+  margin-top: 0.6em;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Strong + em (function-form output respected) ─────────────── */
+strong {
+  font-weight: 600;
+  color: #14120F;
+}
+em {
+  font-style: italic;
+}
+
+/* ─── Front-matter pages (dedication / epigraph / …) ───────────── */
+.frontmatter {
+  text-align: center;
+  margin: 3em 1em;
+  color: #5D564B;
+}

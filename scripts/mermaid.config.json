@@ -1,0 +1,7 @@
+{
+  "look": "handDrawn",
+  "handDrawnSeed": 42,
+  "htmlLabels": false,
+  "flowchart": { "htmlLabels": false, "useMaxWidth": true, "curve": "basis", "padding": 9, "nodeSpacing": 25, "rankSpacing": 45 },
+  "themeVariables": { "fontFamily": "Kalam, Inter", "fontSize": "17px" }
+}
