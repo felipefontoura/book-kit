@@ -44,7 +44,7 @@ if (!existsSync(MMDC)) {
 // fill colour, stroke-width≈4, a very long `d`) immediately followed by the rough
 // outline path. We fill that outline with the hachure's colour and drop the
 // hachure. Edges (marker-end / flowchart-link / data-edge) are left untouched.
-function solidifyHandDrawn(svg) {
+function solidifyHandDrawn(svg, classNames = []) {
   let out = svg;
   // Handwriting font (Kalam) with Inter as the fallback so symbols Kalam lacks
   // (→, ↑, ↓) render as a clean glyph instead of a serif default. And use the
@@ -53,9 +53,13 @@ function solidifyHandDrawn(svg) {
   out = out.replace(/font-weight="normal"/g, 'font-weight="bold"');
   out = out.replace(/font-weight:\s*normal/g, 'font-weight:bold');
   // Drop the clean CSS border on node rects — only the rough (hand-drawn) outline
-  // should draw the border, so nodes never look machine-ruled.
-  out = out.replace(/\.(?:goal|driver|molhada|io|etapa) rect\{[^}]*\}/g,
-    (m) => m.replace(/stroke(?:-width)?:[^;}]*;?/g, ''));
+  // should draw the border, so nodes never look machine-ruled. The class names
+  // come from the diagram's classDefs (shared Kit classes + inline ones).
+  if (classNames.length) {
+    const reClassed = new RegExp(`\\.(?:${classNames.join('|')}) rect\\{[^}]*\\}`, 'g');
+    out = out.replace(reClassed,
+      (m) => m.replace(/stroke(?:-width)?:[^;}]*;?/g, ''));
+  }
   // Connector weight is governed by CSS (.edge-thickness-normal), which OVERRIDES the
   // per-path stroke-width attribute — so bump it here. A node border is a rough double
   // stroke (~2× a 1px pass spread apart); match that visual band with a single solid line.
@@ -95,6 +99,35 @@ function solidifyHandDrawn(svg) {
   return out;
 }
 
+// ─── Shared Kit node classes ──────────────────────────────────────
+// Kit-owned semantic classDefs (scripts/mermaid.classes.mmd) are injected into
+// every classDef-capable diagram right after its header line, so any book can
+// write `class N accent;` with zero setup. A book adds or overrides classes by
+// dropping a mermaid.classes.mmd next to its book.config.json — those lines
+// are injected after the kit's, and later definitions win in Mermaid, so:
+// inline classDef > book file > kit defaults.
+const classFiles = [
+  resolve(KIT_ROOT, 'scripts/mermaid.classes.mmd'),
+  resolve(PROJECT_ROOT, 'mermaid.classes.mmd'),
+];
+const sharedClasses = classFiles
+  .filter((p) => existsSync(p))
+  .flatMap((p) => readFileSync(p, 'utf8').split('\n'))
+  .map((l) => l.trim())
+  .filter((l) => l && !l.startsWith('%%'));
+
+// Types that support classDef: flowchart/graph and stateDiagram(-v2).
+const RE_CLASSABLE = /^(graph|flowchart|stateDiagram)\b/;
+
+function injectSharedClasses(code) {
+  if (!sharedClasses.length) return code;
+  const lines = code.split('\n');
+  const head = lines.findIndex((l) => RE_CLASSABLE.test(l.trim()));
+  if (head === -1) return code;  // sequence/er/etc. — themeVariables only
+  lines.splice(head + 1, 0, ...sharedClasses.map((l) => '    ' + l));
+  return lines.join('\n');
+}
+
 const src = readFileSync(MD, 'utf8');
 
 // Match fenced mermaid blocks. Tolerate optional whitespace after the fence.
@@ -124,7 +157,12 @@ for (const b of blocks) {
   const id = String(b.index).padStart(3, '0');
   const inFile = resolve(work, `diagram-${id}.mmd`);
   const outFile = resolve(OUT_DIR, `diagram-${id}.svg`);
-  writeFileSync(inFile, b.code);
+  const code = injectSharedClasses(b.code);
+  // Every class name defined for this diagram (shared + inline), for the
+  // CSS-border cleanup in solidifyHandDrawn. classDef accepts a,b,c lists.
+  const classNames = [...code.matchAll(/classDef\s+([A-Za-z0-9_,-]+)/g)]
+    .flatMap((m) => m[1].split(','));
+  writeFileSync(inFile, code);
   process.stdout.write(`  ↳ diagram-${id}.svg ... `);
   try {
     execFileSync(
@@ -133,13 +171,12 @@ for (const b of blocks) {
         '-i', inFile,
         '-o', outFile,
         '-b', 'transparent',
-        '-t', 'default',
         '-c', MERMAID_CONFIG,
         '-p', PUPPETEER_CONFIG,
       ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
-    writeFileSync(outFile, solidifyHandDrawn(readFileSync(outFile, 'utf8')));
+    writeFileSync(outFile, solidifyHandDrawn(readFileSync(outFile, 'utf8'), classNames));
     console.log('ok');
     manifest.push({ index: b.index, file: `assets/diagrams/diagram-${id}.svg` });
   } catch (err) {

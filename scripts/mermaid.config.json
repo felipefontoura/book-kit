@@ -2,6 +2,32 @@
   "look": "handDrawn",
   "handDrawnSeed": 42,
   "htmlLabels": false,
+  "theme": "base",
   "flowchart": { "htmlLabels": false, "useMaxWidth": true, "curve": "basis", "padding": 9, "nodeSpacing": 25, "rankSpacing": 45 },
-  "themeVariables": { "fontFamily": "Kalam, Inter", "fontSize": "17px" }
+  "themeVariables": {
+    "fontFamily": "Kalam, Inter",
+    "fontSize": "17px",
+    "background": "#FBF8F2",
+    "primaryColor": "#ECE7DE",
+    "primaryTextColor": "#14120F",
+    "primaryBorderColor": "#B3A896",
+    "secondaryColor": "#E9CF95",
+    "secondaryBorderColor": "#AD7A14",
+    "tertiaryColor": "#EFDFBB",
+    "tertiaryBorderColor": "#8C6210",
+    "lineColor": "#5D564B",
+    "textColor": "#1A1206",
+    "noteBkgColor": "#FCEAC5",
+    "noteBorderColor": "#AD7A14",
+    "edgeLabelBackground": "#FBF8F2",
+    "clusterBkg": "#F0EAE0",
+    "clusterBorder": "#CFC7BA",
+    "actorBkg": "#ECE7DE",
+    "actorBorder": "#B3A896",
+    "actorTextColor": "#14120F",
+    "signalColor": "#5D564B",
+    "signalTextColor": "#1A1206",
+    "activationBkgColor": "#E9CF95",
+    "activationBorderColor": "#AD7A14"
+  }
 }
