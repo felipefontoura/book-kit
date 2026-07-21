@@ -1,6 +1,8 @@
 [tools]
 node = "25"
-"github:typst/typst" = "latest"
+# Pinned: newer Typst releases break @preview/mitex 0.2.5 ("unknown variable:
+# kai" in its symbol table). Bump only after verifying a math build.
+"github:typst/typst" = "0.14.2"
 
 [env]
 # Tell mmdc / puppeteer to use system Chromium if available, falling back to
