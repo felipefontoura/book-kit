@@ -48,4 +48,4 @@ export function mathExtensions(render = {}) {
 }
 
 // Pinned to match the import emitted into generated Typst chapter files.
-export const MITEX_VERSION = '0.2.5';
+export const MITEX_VERSION = '0.2.7';
