@@ -26,6 +26,8 @@ If you don't use [mise](https://mise.jdx.dev), install Node ≥ 20 and
    the pages your change touches.
 3. If you can, rebuild a real book that consumes the kit as a submodule
    (`bash kit/scripts/build.sh` from the book root).
+4. If your change affects the rendered output, refresh the committed sample:
+   `cp example/.build/dist/book-en.{pdf,epub} example/output/`.
 
 ## Design rules
 

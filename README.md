@@ -15,6 +15,10 @@ books as a git submodule.
 [![Typst](https://img.shields.io/badge/Typst-powered-AD7A14.svg)](https://typst.app)
 [![Node](https://img.shields.io/badge/Node-%E2%89%A520-5D564B.svg)](https://nodejs.org)
 
+[View sample PDF](example/output/book-en.pdf)
+·
+[View sample EPUB](example/output/book-en.epub)
+·
 [Report Bug](https://github.com/felipefontoura/book-kit/issues/new?template=bug_report.yml)
 ·
 [Request Feature](https://github.com/felipefontoura/book-kit/issues/new?template=feature_request.yml)
@@ -95,7 +99,10 @@ bash example/run.sh      # → example/.build/dist/{book-en.pdf, book-en.epub, c
 ```
 
 The [example book](example/BOOK.en.md) is a tiny book that exercises every
-feature — it doubles as living documentation and as the CI smoke test.
+feature — it doubles as living documentation and as the CI smoke test. Don't
+want to build first? Finished output is committed at
+[`example/output/`](example/output) ([PDF](example/output/book-en.pdf) ·
+[EPUB](example/output/book-en.epub)).
 
 ### Start your own book
 
