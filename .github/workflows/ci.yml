@@ -10,10 +10,10 @@ jobs:
     name: Build the example book
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Installs Node + Typst pinned by mise.toml
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v4
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -24,7 +24,7 @@ jobs:
         run: bash example/run.sh --all
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: example-book
           path: example/.build/dist/
