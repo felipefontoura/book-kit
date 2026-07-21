@@ -1,8 +1,7 @@
-// Book template — IA Consultant
+// Book template — book-kit
 //
-// Visual system: Kit (carvão warm + âmbar ouro-velho) adapted for print.
-// References: felipefontoura.com design tokens,
-//             felipefontoura.com/src/styles/global.css (live).
+// Visual system: Kit (warm charcoal + ouro-velho amber) adapted for print.
+// Reference implementation: felipefontoura.com (light theme).
 //
 // Trim 6×9" (KDP-Print compatible). The three Kit voices apply:
 //   serif (Newsreader) = voice (titles, chapter headings, tese, quotes)

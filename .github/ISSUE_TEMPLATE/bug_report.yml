@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in the pipeline breaks or renders wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal Markdown to reproduce
+      description: >
+        The smallest BOOK.*.md snippet (plus book.config.json fields, if
+        relevant) that triggers the problem. If `bash example/run.sh` already
+        shows it, just say so.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Affected target
+      placeholder: PDF / EPUB / cover / all
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, Typst version (`typst --version`).
+      placeholder: |
+        Arch Linux · Node 25.x · typst 0.14.x
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Build output
+      description: The relevant part of the `build.sh` output or Typst error.
+      render: text
+    validations:
+      required: false

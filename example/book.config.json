@@ -1,0 +1,29 @@
+{
+  "$comment": "Single source of truth for every book-specific string + the portability seam. The engine reads only from here, so it can be shared verbatim across books as a git submodule. kit.dir is the engine path relative to this file's directory: \"\" means the engine lives in this same repo (single-repo mode); \"kit\" means it is mounted at kit/ (submodule mode — here, a symlink back to the repo root so the example builds in place).",
+  "kit": { "dir": "kit" },
+  "author": "Jane Author",
+  "publisher": "Example Press",
+  "languages": {
+    "en": {
+      "langTag": "en-US",
+      "title": "The Example Book",
+      "subtitle": "Everything the book-kit pipeline can render, in one tiny book",
+      "eyebrow": "A demo of the engine",
+      "tocName": "Contents",
+      "preambleTitle": "Introduction",
+      "partsLabel": "Part",
+      "appendixLabel": "Appendix",
+      "description": "A minimal book exercising every feature of the book-kit build engine: chapters, parts, appendices, Mermaid diagrams, LaTeX math, worksheets, and front-matter pages.",
+      "cover": {
+        "title": "The Example Book",
+        "subtitle": "Everything the pipeline can render, in one tiny book",
+        "label": "A DEMO OF THE ENGINE"
+      },
+      "copyright": [
+        "Copyright © 2026 Jane Author. Released under the same MIT license as the kit.",
+        "This is the example book that ships with book-kit. Copy this folder, rename things, and start writing.",
+        "First edition. Independently published."
+      ]
+    }
+  }
+}

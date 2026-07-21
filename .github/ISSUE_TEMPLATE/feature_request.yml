@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose an addition to the engine
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What book problem does this solve?
+      description: >
+        Describe the authoring or publishing need first — the engine only
+        grows features that a real book needs.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: >
+        How would an author use it? Remember the design rule: book-specific
+        strings live in book.config.json, never hardcoded in the engine.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

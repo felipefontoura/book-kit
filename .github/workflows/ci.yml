@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  example-build:
+    name: Build the example book
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Installs Node + Typst pinned by mise.toml
+      - uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "false"
+
+      - name: Build the example book (PDF + EPUB + cover)
+        run: bash example/run.sh --all
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-book
+          path: example/.build/dist/
+          retention-days: 14

@@ -11,10 +11,10 @@
 //     --input title="..." --input subtitle="..." \
 //     --input author="..." --input label="..."
 
-#let title    = sys.inputs.at("title",    default: "A IA é a Parte Fácil")
+#let title    = sys.inputs.at("title",    default: "Book Title")
 #let subtitle = sys.inputs.at("subtitle", default: "")
-#let author   = sys.inputs.at("author",   default: "Felipe Fontoura")
-#let label    = sys.inputs.at("label",    default: "Guia estratégico de consultoria em IA")
+#let author   = sys.inputs.at("author",   default: "Author Name")
+#let label    = sys.inputs.at("label",    default: "")
 
 // ─── Kit DARK tokens (the carvão + amber LED) ───────────────────
 #let bg       = rgb("#14120F")  // carvão warm

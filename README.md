@@ -1,113 +1,351 @@
-# book-kit — portable Typst → PDF/EPUB engine
+<a id="readme-top"></a>
 
-This is the shared build engine behind the author's books: a Markdown → PDF (Typst)
-+ EPUB 3 pipeline with print typography, a KDP cover renderer, Mermaid diagrams,
-math, and worksheet "folhas". A book consumes it as a **git submodule**, so every
-book inherits the same pipeline, typography and fixes from one place — the only
-per-book file is `book.config.json`.
+<div align="center">
 
-Consume it from a book repo:
+# book-kit
+
+**Write a book in Markdown. Get a print-ready PDF, an EPUB 3, and a KDP cover.**
+
+A portable Typst build engine with editorial print typography, hand-drawn
+Mermaid diagrams, LaTeX math, and diagnostic worksheets — shared across many
+books as a git submodule.
+
+[![CI](https://github.com/felipefontoura/book-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/felipefontoura/book-kit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-B3A896.svg)](LICENSE)
+[![Typst](https://img.shields.io/badge/Typst-powered-AD7A14.svg)](https://typst.app)
+[![Node](https://img.shields.io/badge/Node-%E2%89%A520-5D564B.svg)](https://nodejs.org)
+
+[Report Bug](https://github.com/felipefontoura/book-kit/issues/new?template=bug_report.yml)
+·
+[Request Feature](https://github.com/felipefontoura/book-kit/issues/new?template=feature_request.yml)
+
+<img src=".github/assets/demo-cover.png" alt="Generated KDP cover" height="340">&nbsp;&nbsp;
+<img src=".github/assets/demo-page.png" alt="Interior page with hand-drawn Mermaid diagram" height="340">
+
+*Both images are real, unretouched output of `bash example/run.sh`.*
+
+</div>
+
+## Table of contents
+
+- [About](#about)
+- [Getting started](#getting-started)
+- [Writing a book](#writing-a-book)
+- [Configuration — book.config.json](#configuration--bookconfigjson)
+- [Diagrams](#diagrams)
+- [Math](#math)
+- [Worksheets](#worksheets)
+- [Front-matter pages](#front-matter-pages)
+- [Architecture](#architecture)
+- [Visual system](#visual-system)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+- [Acknowledgments](#acknowledgments)
+
+## About
+
+Word processors fight you; LaTeX overwhelms you; most Markdown-to-book tools
+stop at "it compiles." This kit was built to publish a real book series (the
+author's books) and cares about the part those tools skip: **the typography**.
+
+One Markdown file per book is the single source of truth. From it, one command
+produces:
+
+- **Print-ready PDF** — 6×9" trim (KDP-Print compatible), a three-voice type
+  system (Newsreader / Inter / JetBrains Mono, all bundled), parts, chapters,
+  appendices, generated TOC, running headers, and a warm paper palette tuned
+  for ink.
+- **EPUB 3** — reflowable, conservative CSS, working navigation, MathML.
+- **Cover** — a KDP-compatible PNG rendered by Typst from your config strings.
+
+The engine is consumed as a **git submodule**: every book inherits the same
+pipeline, typography, and fixes from one place. The only per-book files are
+`book.config.json` and your `BOOK.<lang>.md`.
+
+### Built with
+
+[Typst](https://typst.app) ·
+[marked](https://marked.js.org) ·
+[mermaid-cli](https://github.com/mermaid-js/mermaid-cli) ·
+[mitex](https://github.com/mitex-rs/mitex) ·
+[KaTeX](https://katex.org) ·
+[html-to-epub](https://github.com/lesjoursfr/html-to-epub)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Getting started
+
+### Prerequisites
+
+- [mise](https://mise.jdx.dev) (recommended — installs pinned Node + Typst from
+  `mise.toml`), **or** Node ≥ 20 and [Typst](https://typst.app/docs/) on `PATH`.
+- Chromium/Chrome for Mermaid rendering (puppeteer downloads one automatically
+  during `npm install` if none is found).
+
+### Try it in two minutes
 
 ```bash
-git submodule add git@github.com:felipefontoura/book-kit.git kit
-# in the book's book.config.json set  "kit": { "dir": "kit" }
-bash kit/scripts/build.sh --all       # run from the book root
+git clone https://github.com/felipefontoura/book-kit.git
+cd book-kit
+mise install
+npm ci
+bash example/run.sh      # → example/.build/dist/{book-en.pdf, book-en.epub, cover-en.png}
 ```
 
-## What is engine vs. what is book
+The [example book](example/BOOK.en.md) is a tiny book that exercises every
+feature — it doubles as living documentation and as the CI smoke test.
 
-| Owner | Files | Notes |
-|---|---|---|
-| **Kit** (engine, shareable) | `scripts/` · `typst/{template,cover,worksheet,book}.typ` · `typst/assets/fonts/` · `mermaid.config.json` · `puppeteer.config.json` · `scripts/epub.css` · `package.json` · `mise.toml` | Read-only. Same for every book. |
-| **Book** (per project) | `book.config.json` · `BOOK.*.md` · generated `typst/chapters/` · `typst/chapters.typ` · `typst/assets/diagrams/` · `dist/` | The only things you author/generate per book. |
+### Start your own book
 
-## The two roots
+```bash
+mkdir my-book && cd my-book && git init
+git submodule add https://github.com/felipefontoura/book-kit.git kit
+cp kit/example/book.config.json .        # then edit every string
+cp kit/example/BOOK.en.md .              # or start fresh
+bash kit/scripts/build.sh --all          # run from the book root
+```
 
-The scripts resolve two directories (see `scripts/lib/config.mjs`):
+In `book.config.json`, keep `"kit": { "dir": "kit" }` — it tells the generated
+Typst where the engine is mounted. Outputs land in `dist/`.
 
-- **`KIT_ROOT`** — where the engine lives (the script's `../..`). Read-only:
-  template/cover/worksheet, fonts, mermaid/puppeteer/epub configs, `node_modules`.
-- **`PROJECT_ROOT`** — the book being built. Holds `book.config.json` and
-  `BOOK.*.md`, and receives every generated output. Resolved as
-  `$PROJECT_ROOT` → the current dir if it has a `book.config.json` → else the
-  kit itself.
+```bash
+bash kit/scripts/build.sh --pdf          # fastest iteration on print layout
+bash kit/scripts/build.sh --epub         # EPUB + cover only
+SOURCE_MD=BOOK.en.md bash kit/scripts/build.sh   # force a source file
+git submodule update --remote kit        # pull engine updates later
+```
 
-In single-repo mode the two are the same directory, so nothing changes.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Typst is compiled with `--root PROJECT_ROOT`, so **absolute-from-root** paths
-(`/…`) resolve against the book. Kit-owned modules are imported with the kit's
-submodule dir as a prefix (`book.config.json → kit.dir`), which is `""` locally
-and e.g. `kit` under a submodule. That single knob is what makes the generated
-`#import "/kit/typst/template.typ"` work from anywhere.
+## Writing a book
 
-## Customizing a book — `book.config.json`
+The pipeline expects this exact heading hierarchy:
 
-Every book-specific string lives here (nothing is hardcoded in the engine). Per
+```markdown
+# PART I: Part Title              ← H1, part divider (PART/PARTE + roman numeral)
+## Chapter 1: Chapter Title       ← H2, chapter (number + colon)
+### Section                       ← H3 inside a chapter
+#### Subsection                   ← H4
+
+## Appendix A: Appendix Title     ← H2, appendix (uppercase letter + colon)
+```
+
+- Everything before the first part/chapter becomes the **preamble** (titled by
+  `preambleTitle` in the config).
+- A frontmatter H1 with the book title is dropped automatically — the title
+  page handles it.
+- **Don't** write a TOC heading; Typst generates the table of contents.
+- GFM throughout: `-` lists, `1.` lists, pipe tables, fenced code with language
+  hints, `**bold**`, `*italic*`, `` `code` ``, links, blockquotes.
+- Headings carry no `**bold**` wrap — the template owns weight.
+
+Portuguese (`PARTE`, `Capítulo`, `Apêndice`) and English markers are both
+recognized. Source files are named `BOOK.<lang>.md` (e.g. `BOOK.pt-BR.md`,
+`BOOK.en.md`); the language tag drives output names and hyphenation.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Configuration — book.config.json
+
+Every book-specific string lives here — nothing is hardcoded in the engine.
+Copy [`example/book.config.json`](example/book.config.json) and edit. Per
 language (`languages.pt`, `languages.en`, …):
 
 | Field | Feeds |
 |---|---|
-| `title`, `subtitle`, `eyebrow` | **title page** (Typst) + EPUB metadata |
-| `copyright` (array of paragraphs) | **copyright page** — see below |
+| `title`, `subtitle`, `eyebrow` | title page (Typst) + EPUB metadata |
+| `copyright` (array of paragraphs) | copyright page — one entry per paragraph |
 | `tocName` | table-of-contents heading |
 | `cover.{title,subtitle,label}` | the KDP cover (`cover.typ`) |
-| `preambleTitle`, `partsLabel`, `appendixLabel` | EPUB navigation labels |
+| `preambleTitle`, `partsLabel`, `appendixLabel` | section labels + EPUB navigation |
 | `description`, `langTag` | EPUB metadata |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
+| `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
 
-### The copyright page
+The template owns *layout*, the config owns *words*: to change the copyright
+page you edit the array, never the Typst.
 
-The copyright page is generated from `languages.<lang>.copyright` — a plain
-**array of paragraphs**. `book.typ` renders a bold *title* + *subtitle* header
-(pulled automatically), then each array entry as its own spaced paragraph. To
-change the copyright text, edit that array; add/remove entries to add/remove
-paragraphs. No Typst editing required.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-The title page (eyebrow · title · subtitle · author) is likewise fully driven by
-the fields above — `template.typ` only owns the *layout*, never the words.
+## Diagrams
 
-### Front-matter pages (dedication, epigraph, …)
+Diagrams are authored as ```` ```mermaid ```` fences and rendered at build time
+to SVGs with a **hand-drawn look** (rough.js via Mermaid, with solid fills
+post-processed in for print legibility and the Kalam handwriting font for
+labels). The same SVG feeds the PDF and the EPUB.
 
-Extra front-matter pages are **optional Markdown files**, discovered by
-convention — no config entry. Drop them in a `frontmatter/` folder at the book
-root:
+The kit applies the Kit palette automatically (via `themeVariables`, so
+sequence/ER diagrams are covered too) and injects four **semantic node
+classes** into every flowchart/state diagram — use them with zero setup:
 
+```mermaid
+graph LR
+    A[Markdown source] --> B[Mermaid SVGs]
+    B --> C[PDF + EPUB]
+    class A soft;
+    class B neutral;
+    class C accent;
 ```
+
+| Class | Reads as |
+|---|---|
+| `accent` | the point of the diagram — amber fill, strong amber border |
+| `soft` | supporting highlight — pale amber |
+| `neutral` | plain step — paper fill |
+| `muted` | de-emphasized — faint fill, muted text |
+
+A book can add its own classes (or override these) by dropping a
+`mermaid.classes.mmd` next to its `book.config.json` — one `classDef` per
+line. Precedence: inline `classDef` in a diagram > book file > kit defaults.
+
+Supported types: flowchart/graph, sequenceDiagram, stateDiagram-v2, erDiagram.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Math
+
+Math is authored **once, in LaTeX**, and feeds both targets: Typst via the
+`mitex` package for the PDF, KaTeX → MathML for the EPUB.
+
+- **Display**: `$$ ... $$` on its own block.
+- **Inline**: `\( ... \)`.
+- A single `$` is **not** a math delimiter — it stays currency (`$300,000`),
+  so prose between two prices is never swallowed.
+
+Reserve real math for stacked fractions, summations, sub/superscripts. Simple
+linear formulas read better as bold text or a table. Equation-free builds never
+touch mitex. Note: MathML renders weakly on classic Kindle — switch a critical
+formula to an SVG figure if Kindle fidelity matters.
+
+## Worksheets
+
+A ```` ```worksheet ```` fence renders a diagnostic form — mono labels that
+read as pre-printed, values in a handwriting-style voice that wrap instead of
+clipping:
+
+```text
+title: Client diagnostic
+section: Current state
+Revenue | $2.4M / year, flat for 3 years
+note: Fill one of these per discovery call.
+```
+
+`Label | Value` lines become fields; `section:` starts a group; `note:` adds
+an annotation.
+
+## Front-matter pages
+
+Optional dedication/epigraph pages are Markdown files discovered by convention
+— no config needed. Drop them in `frontmatter/` at the book root:
+
+```text
 frontmatter/
-  dedicatoria.pt-BR.md        # or dedication.md (language-neutral)
-  01-epigrafe.pt-BR.md        # numeric prefix controls order
+  01-dedication.en.md     # numeric prefix controls order
+  epigraph.md             # language-neutral → included in every language
 ```
 
-- A file is included when its name is **language-neutral** (`*.md`) or matches
-  the book's language (`*.pt-BR.md` for a pt-BR build). Missing folder → nothing
-  happens.
-- Rendered order is **filename sort order** — prefix with `01-`, `02-` to order.
-- Each becomes its own page, **unnumbered and header-less**, placed between the
-  copyright page and the TOC (PDF) / before everything in the reader nav (EPUB).
-- **Never listed in the Sumário / TOC.** Markdown headings inside are rendered as
-  soft centred titles (not chapter headings), so they touch neither the outline
-  nor the running header.
-- Content is prose only (paragraphs, emphasis, blockquotes, headings) — no
-  diagrams. It flows through the same Markdown converter as the chapters.
+Each becomes its own unnumbered, header-less page between the copyright page
+and the TOC, never listed in the TOC.
 
-The generated Typst (`typst/frontmatter.typ`, `typst/frontmatter/`) is a build
-artifact and git-ignored, like `typst/chapters/`.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-**Design tokens** (palette, fonts, page geometry) intentionally stay in the kit
-(`template.typ` / `cover.typ`) because they are the shared visual identity, not
-per-book copy. If a future book needs its own palette, we expose those tokens in
-`book.config.json` too — ask and it's a small addition.
+## Architecture
 
-## Turning the engine into a submodule (later)
+```text
+your-book/                     ← the book repo (content + one config)
+├── BOOK.en.md                 ← single source of truth
+├── book.config.json           ← every book-specific string + kit.dir
+├── frontmatter/               ← optional dedication/epigraph pages
+├── typst/ · dist/             ← GENERATED (gitignore them)
+└── kit/                       ← this repo, as a git submodule
+    ├── scripts/               build.sh · md-to-typst · md-to-epub · render-mermaid · lib/
+    ├── typst/                 book.typ · template.typ · cover.typ · worksheet.typ
+    └── typst/assets/fonts/    Newsreader · Inter · JetBrains Mono · Kalam (bundled, OFL)
+```
 
-When you extract the engine into its own repo and add it to a book as a
-submodule at, say, `kit/`:
+Two roots keep the engine portable (`scripts/lib/config.mjs`):
 
-1. `git submodule add <engine-repo-url> kit`
-2. In the book's `book.config.json`, set `"kit": { "dir": "kit" }`.
-3. Build with `bash kit/scripts/build.sh` from the book root (or
-   `PROJECT_ROOT=$PWD bash kit/scripts/build.sh`).
+- **`KIT_ROOT`** — the engine. Read-only: templates, fonts, configs,
+  `node_modules`.
+- **`PROJECT_ROOT`** — the book being built. Holds the config + source, and
+  receives every generated output. Resolved as `$PROJECT_ROOT` → the current
+  dir if it has a `book.config.json` → else the kit itself (single-repo mode).
 
-The book repo then holds only `book.config.json`, `BOOK.*.md` and its generated
-output; everything else is inherited from the submodule and updated with
-`git submodule update --remote`.
+Typst compiles with `--root PROJECT_ROOT`; kit modules are imported with
+`kit.dir` as prefix. That single knob makes the generated
+`#import "/kit/typst/template.typ"` work from anywhere.
+
+The pipeline: `render-mermaid.mjs` (fences → SVGs + manifest) →
+`md-to-typst.mjs` (marked tokens → Typst chapters) → `typst compile` → PDF;
+in parallel, `cover.typ` → PNG and `md-to-epub.mjs` → EPUB 3 (with MathML
+repair in `lib/epub-mathml-fix.mjs`).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Visual system
+
+The visual identity: warm charcoal + amber, three type voices, and
+separation by surface instead of borders.
+
+| Voice | Family | Used for |
+|---|---|---|
+| Serif (display) | Newsreader 400/500 | chapter titles, part pages, blockquotes, cover |
+| Sans (body) | Inter 400/500/600 | body text, lists, tables, captions |
+| Mono (labels) | JetBrains Mono 400/500 | running headers, eyebrows, code — always lowercase, gentle tracking |
+
+Interior uses the light theme (paper `#FBF8F2`, ink `#1A1206`, ouro-velho
+amber `#AD7A14`); the bright LED amber (`#EDA921`) appears **only on the
+cover**, as a point of light on dark. Code blocks get a tinted background and
+an amber left bar; tables get thin bottom rules, no grid.
+
+Design tokens intentionally live in the kit (`template.typ` / `cover.typ`) —
+they are the shared identity of a book series, not per-book copy. If your
+series needs its own palette, fork or open an issue: exposing tokens through
+`book.config.json` is on the roadmap.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Roadmap
+
+- [ ] Expose design tokens (palette, type scale) in `book.config.json`
+- [ ] Full-wrap KDP cover (front + spine + back) sized by page count
+- [ ] More trim sizes beyond 6×9"
+- [ ] Built-in label packs for more languages
+- [ ] Optional chapter epigraphs
+
+See [open issues](https://github.com/felipefontoura/book-kit/issues)
+for the full list.
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+the verification checklist (build the example, *look at the output*), and the
+design rules that keep the engine portable. This project follows a
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+Code is distributed under the **MIT License** — see [LICENSE](LICENSE).
+The bundled fonts are under the **SIL Open Font License 1.1** — see
+[typst/assets/fonts/LICENSE.md](typst/assets/fonts/LICENSE.md).
+
+## Contact
+
+Felipe Fontoura — [felipefontoura.com](https://felipefontoura.com) ·
+[@felipefontoura](https://github.com/felipefontoura)
+
+## Acknowledgments
+
+- [Typst](https://typst.app) for making programmable print typography sane
+- [Mermaid](https://mermaid.js.org)'s hand-drawn look (rough.js) for diagrams
+  that feel sketched, not generated
+- [Rasmus Andersson](https://rsms.me/inter/) (Inter),
+  [JetBrains](https://www.jetbrains.com/lp/mono/) (JetBrains Mono),
+  [Production Type](https://github.com/productiontype/Newsreader) (Newsreader),
+  and the [Indian Type Foundry](https://github.com/itfoundry/kalam) (Kalam)
+- [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+  for the shape of this file
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>

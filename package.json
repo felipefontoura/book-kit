@@ -1,8 +1,15 @@
 {
-  "name": "ia-consultant-book-build",
+  "name": "book-kit",
   "private": true,
   "type": "module",
-  "description": "Typst build pipeline for the IA Consultant book. Source of truth remains BOOK.{pt-BR,en}.md.",
+  "version": "1.0.0",
+  "description": "Portable Markdown → PDF (Typst) + EPUB 3 book engine: print typography, KDP cover, Mermaid diagrams, LaTeX math, worksheets.",
+  "license": "MIT",
+  "author": "Felipe Fontoura (https://felipefontoura.com)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipefontoura/book-kit.git"
+  },
   "scripts": {
     "render:diagrams": "node scripts/render-mermaid.mjs",
     "convert:typst": "node scripts/md-to-typst.mjs",
@@ -10,7 +17,7 @@
     "build": "bash scripts/build.sh",
     "build:pdf": "bash scripts/build.sh --pdf",
     "build:epub": "bash scripts/build.sh --epub",
-    "watch": "typst watch typst/book.typ dist/book.pdf"
+    "example": "bash example/run.sh"
   },
   "devDependencies": {
     "@lesjoursfr/html-to-epub": "^4.1.5",
