@@ -119,10 +119,11 @@ function renderInline(tokens) {
         out += '#emph[' + renderInline(t.tokens) + ']';
         break;
       case 'codespan': {
-        const n = fenceLen(t.text);
-        const fence = '`'.repeat(n);
-        const pad = t.text.startsWith('`') || t.text.endsWith('`') ? ' ' : '';
-        out += fence + pad + t.text + pad + fence;
+        // Function form, not markup fences: a 3+-backtick fence makes Typst
+        // parse the first word as a language tag, silently swallowing spans
+        // like `accent` (tag + empty body) or `github.com/...` (tag "github").
+        const s = t.text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        out += `#raw("${s}")`;
         break;
       }
       case 'del':
