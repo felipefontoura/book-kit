@@ -182,7 +182,7 @@ to SVGs with a **hand-drawn look** (rough.js via Mermaid, with solid fills
 post-processed in for print legibility and the Kalam handwriting font for
 labels). The same SVG feeds the PDF and the EPUB.
 
-The kit applies the kit palette automatically (via `themeVariables`, so
+The kit applies its amber palette automatically (via `themeVariables`, so
 sequence/ER diagrams are covered too) and injects four **semantic node
 classes** into every flowchart/state diagram — use them with zero setup:
 
