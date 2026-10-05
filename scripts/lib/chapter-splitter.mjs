@@ -4,7 +4,7 @@
 //   - frontmatter (everything before the first PART/Chapter heading)
 //   - part        (a "# PART X: ..." or "# PARTE X: ..." divider — no body)
 //   - chapter     (a "## Chapter N: Title" or "## Capítulo N: Título" section)
-//   - appendix    (a "## Appendix X: Title" or "## Apêndice X: Título" section)
+//   - appendix    (a "## Appendix X: Title" or "## Apêndice X: Título" / "## Apéndice X: Título" section)
 //
 // Each section carries:
 //   - tokens     — marked tokens belonging to this section (for the Typst path)
@@ -16,7 +16,7 @@ import { mathExtensions } from './math.mjs';
 
 const RE_PART     = /^(PART|PARTE)\s+/i;
 const RE_CHAPTER  = /^(Chapter|Cap[íi]tulo)\s+(\d+)\s*[:—-]\s*(.+)$/i;
-const RE_APPENDIX = /^(Appendix|Ap[êe]ndice)\s+([A-Z])\s*[:—-]\s*(.+)$/i;
+const RE_APPENDIX = /^(Appendix|Ap[eêé]ndice)\s+([A-Z])\s*[:—-]\s*(.+)$/i;
 
 export function splitSections(mdSource, { gfm = true } = {}) {
   const marked = new Marked({ gfm });
@@ -119,7 +119,24 @@ export function langFromFilename(path) {
   return m ? m[1] : null;
 }
 
-export function isPortugueseFilename(path) {
-  const lang = langFromFilename(path);
-  return lang != null && /^pt(-[A-Z]{2})?$/i.test(lang);
+// Base language of the source file (pt | es | en), from BOOK.<lang>.md.
+// Anything unrecognised falls back to English.
+export function baseLangFromFilename(path) {
+  const base = (langFromFilename(path) ?? '').split('-')[0].toLowerCase();
+  return base in LABELS ? base : 'en';
+}
+
+// Words the generated output uses when re-emitting headings. The source
+// headings are matched in every language by the RE_* patterns above.
+const LABELS = {
+  en: { chapter: 'Chapter',  part: 'Part',  appendix: 'Appendix', appendixSlug: 'appendix',
+        appendices: ['Appendices', 'Exercises, Templates & Resources'] },
+  pt: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apêndice', appendixSlug: 'apendice',
+        appendices: ['Apêndices', 'Exercícios, Templates & Recursos'] },
+  es: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apéndice', appendixSlug: 'apendice',
+        appendices: ['Apéndices', 'Ejercicios, Plantillas y Recursos'] },
+};
+
+export function labelsFor(path) {
+  return LABELS[baseLangFromFilename(path)];
 }

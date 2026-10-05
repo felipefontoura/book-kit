@@ -49,7 +49,7 @@
 ) = {
   // Default region from lang when not explicit.
   let resolved-region = if region == auto {
-    if lang == "pt" { "br" } else if lang == "en" { "us" } else { "" }
+    if lang == "pt" { "br" } else if lang == "en" { "us" } else if lang == "es" { "es" } else { "" }
   } else {
     region
   }

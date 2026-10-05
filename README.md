@@ -147,8 +147,9 @@ The pipeline expects this exact heading hierarchy:
   hints, `**bold**`, `*italic*`, `` `code` ``, links, blockquotes.
 - Headings carry no `**bold**` wrap — the template owns weight.
 
-Portuguese (`PARTE`, `Capítulo`, `Apêndice`) and English markers are both
-recognized. Source files are named `BOOK.<lang>.md` (e.g. `BOOK.pt-BR.md`,
+Portuguese (`PARTE`, `Capítulo`, `Apêndice`), Spanish (`Apéndice`) and English
+markers are all recognized; generated labels exist for `pt`, `es` and `en`
+(see `LABELS` in `scripts/lib/chapter-splitter.mjs` to add a language). Source files are named `BOOK.<lang>.md` (e.g. `BOOK.pt-BR.md`,
 `BOOK.en.md`); the language tag drives output names and hyphenation.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

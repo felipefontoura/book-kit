@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Extract ```mermaid blocks from BOOK.{pt-BR,en}.md and render each to SVG via mmdc.
+// Extract ```mermaid blocks from BOOK.{pt-BR,en,es}.md and render each to SVG via mmdc.
 // Writes typst/assets/diagrams/diagram-NNN.svg plus a manifest.json
 // that md-to-typst.mjs uses to map blocks to image paths.
 

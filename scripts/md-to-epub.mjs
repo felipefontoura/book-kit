@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Convert BOOK.{pt-BR,en}.md into an EPUB 3 file using the shared chapter
+// Convert BOOK.{pt-BR,en,es}.md into an EPUB 3 file using the shared chapter
 // splitter and marked.parse() for HTML rendering. Mermaid blocks are
 // substituted with <figure><img> tags pointing at the pre-rendered SVGs.
 //
 // Cover: expects dist/cover-${lang}.png (rendered separately from
 // typst/cover.typ via build.sh).
 //
-// Source of truth: BOOK.{pt-BR,en}.md. Re-run after every MD edit.
+// Source of truth: BOOK.{pt-BR,en,es}.md. Re-run after every MD edit.
 
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, resolve, basename } from 'node:path';
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import katex from 'katex';
 import { EPub } from '@lesjoursfr/html-to-epub';
-import { splitSections, isPortugueseFilename, langFromFilename, frontmatterFiles } from './lib/chapter-splitter.mjs';
+import { splitSections, baseLangFromFilename, langFromFilename, frontmatterFiles } from './lib/chapter-splitter.mjs';
 import { mathExtensions } from './lib/math.mjs';
 import { fixEpubMathml } from './lib/epub-mathml-fix.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
@@ -32,12 +32,12 @@ if (!MD) {
 }
 console.log(`▸ Source: ${MD.replace(PROJECT_ROOT + '/', '')}`);
 
-const isPt = isPortugueseFilename(MD);
-const rawLang = (langFromFilename(MD) ?? (isPt ? 'pt-BR' : 'en')).toLowerCase();
+const baseLang = baseLangFromFilename(MD);
+const rawLang = (langFromFilename(MD) ?? baseLang).toLowerCase();
 
 // ─── Metadata (from book.config.json — single source of truth) ───────
 const cfg = JSON.parse(readFileSync(resolve(PROJECT_ROOT,'book.config.json'), 'utf8'));
-const L = cfg.languages[isPt ? 'pt' : 'en'];
+const L = cfg.languages[baseLang];
 const langTag = L.langTag;
 const meta = {
   title: L.title,
