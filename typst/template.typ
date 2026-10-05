@@ -30,11 +30,12 @@
 
 // ─── Font families (bundled in typst/assets/fonts/) ───────────────
 // Note: bundled Newsreader is instanced from the variable opsz axis, so
-// Typst registers the family as "Newsreader 16pt". Libertinus Serif is the
-// graceful fallback for environments without the bundled font.
-#let voice  = ("Newsreader 16pt", "Libertinus Serif", "Liberation Serif")
-#let body   = ("Inter", "Liberation Sans")
-#let mono   = ("JetBrains Mono", "JetBrainsMono NF", "IBM Plex Mono", "DejaVu Sans Mono")
+// Typst registers the family as "Newsreader 16pt". Only bundled families are
+// listed: Typst falls back to its embedded fonts on its own, and naming a
+// system font that is not installed only produces "unknown font family" warnings.
+#let voice  = ("Newsreader 16pt",)
+#let body   = ("Inter",)
+#let mono   = ("JetBrains Mono",)
 
 #let book(
   title: none,

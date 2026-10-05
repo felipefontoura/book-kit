@@ -17,8 +17,8 @@
 #let _text-muted  = rgb("#837B6D")
 #let _rule        = rgb("#CFC7BA")
 #let _rule-strong = rgb("#B3A896")
-#let _mono = ("JetBrains Mono", "JetBrainsMono NF", "IBM Plex Mono", "DejaVu Sans Mono")
-#let _body = ("Inter", "Liberation Sans")
+#let _mono = ("JetBrains Mono",)
+#let _body = ("Inter",)
 
 #let worksheet(title: none, rows: ()) = block(
   width: 100%,

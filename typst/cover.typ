@@ -27,9 +27,9 @@
 #let amber-tint = rgb("#5B4415") // amber-900 — subtle bottom glow
 
 // ─── Font families (same bundle as template) ──────────────────────
-#let voice = ("Newsreader 16pt", "Libertinus Serif")
-#let body  = ("Inter", "Liberation Sans")
-#let mono  = ("JetBrains Mono", "JetBrainsMono NF", "IBM Plex Mono", "DejaVu Sans Mono")
+#let voice = ("Newsreader 16pt",)
+#let body  = ("Inter",)
+#let mono  = ("JetBrains Mono",)
 
 #set page(
   width:  6.4in,
