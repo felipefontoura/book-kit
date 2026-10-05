@@ -31,7 +31,7 @@ Examples of unacceptable behavior:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainer at **https://felipefontoura.com/contact/**. All complaints will be
+reported to the maintainer via **https://felipefontoura.com/contact/?utm_source=github&utm_medium=code-of-conduct&utm_campaign=book-kit**. All complaints will be
 reviewed and investigated promptly and fairly. The maintainer is obligated to
 respect the privacy and security of the reporter of any incident.
 

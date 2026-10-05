@@ -1,8 +1,8 @@
 // Cover renderer — single page, KDP-compatible aspect (5:8 / 1600×2560 @ 250ppi).
 //
-// Visual system: Kit DARK theme (carvão warm + âmbar farol). The cover
+// Visual system: DARK theme (carvão warm + âmbar farol). The cover
 // is the only artefact where the BRIGHT amber (#EDA921) appears — it lives
-// as a "ponto de luz no escuro" per Kit §2.2/§2.5. Interior uses the
+// as a "ponto de luz no escuro" per design system §2.2/§2.5. Interior uses the
 // ouro-velho amber on light paper instead (see typst/template.typ).
 //
 // Parameters via CLI:
@@ -16,7 +16,7 @@
 #let author   = sys.inputs.at("author",   default: "Author Name")
 #let label    = sys.inputs.at("label",    default: "")
 
-// ─── Kit DARK tokens (the carvão + amber LED) ───────────────────
+// ─── DARK tokens (the carvão + amber LED) ───────────────────
 #let bg       = rgb("#14120F")  // carvão warm
 #let elevated = rgb("#1D1916")
 #let paper    = rgb("#ECE7DF")  // text/primary on dark
@@ -67,7 +67,7 @@
   #grid(
     columns: (auto, 1fr),
     gutter: 12pt,
-    // Monogram (serif voice — per Kit §12.6, wordmark is serif, not mono)
+    // Monogram (serif voice — per design system §12.6, wordmark is serif, not mono)
     box(
       width: 32pt, height: 32pt,
       stroke: 1pt + amber-deep,
@@ -84,7 +84,7 @@
 
   #v(1fr)
 
-  // ── Center: serif voice title (the "voz" — Kit §3.1) ──────────
+  // ── Center: serif voice title (the "voz" — design system §3.1) ──────────
   #par(leading: 0.4em)[
     #text(size: 60pt, weight: 400, fill: paper, tracking: -0.03em, font: voice, title)
   ]
@@ -104,6 +104,6 @@
   #v(0.25in)
   #text(size: 13pt, weight: 500, fill: paper, font: body, author)
   #v(0.05in)
-  // Mono lowercase contributor line (Kit §3.4 — lowercase, tracking suave)
+  // Mono lowercase contributor line (design system §3.4 — lowercase, tracking suave)
   #text(size: 9pt, weight: 400, fill: muted, font: mono, tracking: 0.06em, lower("felipefontoura.com"))
 ]

@@ -49,7 +49,7 @@ bash kit/scripts/build.sh --all
 ### Diagrams
 
 Diagrams are always Mermaid — rendered to hand-drawn-style SVGs at build time
-and embedded in both the PDF and the EPUB. The kit injects the Kit palette
+and embedded in both the PDF and the EPUB. The kit injects the kit palette
 automatically, plus four semantic node classes you can use with zero setup:
 `accent`, `soft`, `neutral`, and `muted`. A book can add its own classes in a
 `mermaid.classes.mmd` file at the book root.

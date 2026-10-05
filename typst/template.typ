@@ -12,7 +12,7 @@
 // ouro-velho amber for accents — never the bright LED amber that only reads
 // on dark). Bright amber lives only on the cover (typst/cover.typ).
 
-// ─── Kit light-theme tokens ─────────────────────────────────────
+// ─── Light-theme tokens ─────────────────────────────────────
 #let bg          = rgb("#FBF8F2")   // paper warm (slightly lifted from #ECE7DF to spare ink)
 #let text-main   = rgb("#14120F")   // carvão warm — chapter title + body strong
 #let text-body   = rgb("#1A1206")   // text-on-amber colour, used as body ink (subtly warmer than pure carvão)
@@ -75,7 +75,7 @@
       if all-chapters.any(c => c.location().page() == here-page) { return }
       let prev = all-chapters.filter(c => c.location().page() < here-page)
       if prev.len() == 0 { return }
-      // Mono lowercase eyebrow in the running header (Kit §12.3 — mono
+      // Mono lowercase eyebrow in the running header (design system §12.3 — mono
       // is the rótulo voice; uppercase + tracking would read "estêncil
       // militar" per the design-system anti-pattern).
       set text(
@@ -114,7 +114,7 @@
 
   // ─── Headings ─────────────────────────────────────────────────────
   // Display headings = serif voice 400 (editorial, atemporal).
-  // Component headings = serif voice 500. Per Kit §3.2: serif fina é
+  // Component headings = serif voice 500. Per design system §3.2: serif fina é
   // o "ar de livro"; subir só onde 400 ficaria trêmulo.
   show heading: set text(font: voice, fill: text-main, hyphenate: false)
 
@@ -228,7 +228,7 @@
       fill: text-main,
       tracking: 0.02em,
     )
-    lower(it)                              // mono header = lowercase per Kit §3.4
+    lower(it)                              // mono header = lowercase per design system §3.4
   }
 
   // ─── Links ─────────────────────────────────────────────────────────
@@ -276,7 +276,7 @@
     #set text(hyphenate: false)
     #v(2in)
     #align(center)[
-      // Mono eyebrow (Kit §3.4 lowercase + gentle tracking)
+      // Mono eyebrow (design system §3.4 lowercase + gentle tracking)
       #text(font: mono, size: 9pt, fill: amber-deep, tracking: 0.18em, weight: 500, lower(eyebrow))
       #v(0.8em)
       #text(font: voice, size: 30pt, weight: 400, fill: text-main, tracking: -0.025em, title)

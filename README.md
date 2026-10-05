@@ -51,8 +51,7 @@ books as a git submodule.
 ## About
 
 Word processors fight you; LaTeX overwhelms you; most Markdown-to-book tools
-stop at "it compiles." This kit was built to publish a real book series (the
-author's books) and cares about the part those tools skip: **the typography**.
+stop at "it compiles." This kit was built to publish real books and cares about the part those tools skip: **the typography**.
 
 One Markdown file per book is the single source of truth. From it, one command
 produces:
@@ -183,7 +182,7 @@ to SVGs with a **hand-drawn look** (rough.js via Mermaid, with solid fills
 post-processed in for print legibility and the Kalam handwriting font for
 labels). The same SVG feeds the PDF and the EPUB.
 
-The kit applies the Kit palette automatically (via `themeVariables`, so
+The kit applies the kit palette automatically (via `themeVariables`, so
 sequence/ER diagrams are covered too) and injects four **semantic node
 classes** into every flowchart/state diagram — use them with zero setup:
 
@@ -341,6 +340,7 @@ The bundled fonts are under the **SIL Open Font License 1.1** — see
 ## Contact
 
 Felipe Fontoura — [felipefontoura.com](https://felipefontoura.com) ·
+[Contact](https://felipefontoura.com/contact/?utm_source=github&utm_medium=readme&utm_campaign=book-kit) ·
 [@felipefontoura](https://github.com/felipefontoura)
 
 ## Acknowledgments

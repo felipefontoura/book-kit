@@ -54,7 +54,7 @@ function solidifyHandDrawn(svg, classNames = []) {
   out = out.replace(/font-weight:\s*normal/g, 'font-weight:bold');
   // Drop the clean CSS border on node rects — only the rough (hand-drawn) outline
   // should draw the border, so nodes never look machine-ruled. The class names
-  // come from the diagram's classDefs (shared Kit classes + inline ones).
+  // come from the diagram's classDefs (shared kit classes + inline ones).
   if (classNames.length) {
     const reClassed = new RegExp(`\\.(?:${classNames.join('|')}) rect\\{[^}]*\\}`, 'g');
     out = out.replace(reClassed,

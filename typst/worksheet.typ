@@ -1,7 +1,7 @@
 // Diagnostic worksheet ("folha") renderer — a filled FORM, not a code block.
 // Kept as its own tiny module so chapter files can import just this, without
 // pulling the full book template into every chapter's scope. Tokens mirror
-// template.typ (Kit light theme).
+// template.typ (Light theme).
 //
 // Rendered from ```worksheet fences (parsed in scripts/md-to-typst.mjs). Mono
 // field labels read as the pre-printed form; values in the reading font read

@@ -1,12 +1,11 @@
-/* EPUB stylesheet — Kit visual system (light theme), adapted for ereaders.
+/* EPUB stylesheet — Visual system (light theme), adapted for ereaders.
    Kindle Paperwhite, Apple Books, Kobo, and Calibre all interpret CSS
    slightly differently — stay conservative: no web fonts (readers ignore /
    user-override), no fixed pixel sizes, no complex selectors.
 
-   Reference: felipefontoura.com design tokens
-              felipefontoura.com/src/styles/global.css (live light theme).
+   Reference: felipefontoura.com/src/styles/global.css (live light theme).
    The accent uses ouro-velho (#AD7A14) — the BRIGHT LED amber lives on the
-   cover only (Kit §2.5: amber is a farol, not tinta).
+   cover only (design system §2.5: amber is a farol, not tinta).
 */
 
 /* ─── Base body: sans serif (Inter family with platform fallbacks).
@@ -36,7 +35,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 h1 {
   font-size: 1.9em;
-  font-weight: 400;            /* Kit §3.2 — display voice is LIGHT 400, not bold */
+  font-weight: 400;            /* design system §3.2 — display voice is LIGHT 400, not bold */
   color: #14120F;
   page-break-before: always;
   margin: 1.5em 0 0.5em;
@@ -88,7 +87,7 @@ code {
   font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Courier New", monospace;
   font-size: 0.9em;
   background-color: #F0EAE0;
-  color: #8C6210;              /* ouro-velho deep — inline code colour per Kit prose */
+  color: #8C6210;              /* ouro-velho deep — inline code colour per the prose */
   padding: 0.1em 0.3em;
   border-radius: 2px;
 }
@@ -116,7 +115,7 @@ th {
   font-weight: 500;
   font-size: 0.85em;
   letter-spacing: 0.02em;
-  text-transform: lowercase;   /* Kit §3.4 — mono labels never UPPERCASE */
+  text-transform: lowercase;   /* design system §3.4 — mono labels never UPPERCASE */
   color: #14120F;
   border-bottom: 1.5px solid #B3A896;
 }
@@ -199,7 +198,7 @@ hr {
   font-size: 0.9em;
   color: #AD7A14;
   letter-spacing: 0.18em;
-  text-transform: lowercase;   /* mono label per Kit §3.4 */
+  text-transform: lowercase;   /* mono label per design system §3.4 */
   margin: 0;
 }
 .part-divider .name {
