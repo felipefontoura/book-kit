@@ -122,7 +122,10 @@ const RE_CLASSABLE = /^(graph|flowchart|stateDiagram)\b/;
 function injectSharedClasses(code) {
   if (!sharedClasses.length) return code;
   const lines = code.split('\n');
-  const head = lines.findIndex((l) => RE_CLASSABLE.test(l.trim()));
+  // Skip a YAML frontmatter block (`---` … `---`): its `flowchart:` config key
+  // would otherwise be mistaken for the diagram header.
+  const body = lines[0]?.trim() === '---' ? lines.indexOf('---', 1) + 1 : 0;
+  const head = lines.findIndex((l, i) => i >= body && RE_CLASSABLE.test(l.trim()));
   if (head === -1) return code;  // sequence/er/etc. — themeVariables only
   lines.splice(head + 1, 0, ...sharedClasses.map((l) => '    ' + l));
   return lines.join('\n');
