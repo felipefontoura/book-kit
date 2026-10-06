@@ -26,7 +26,7 @@
   stroke: (left: 2pt + _codestroke),
   inset: (x: 14pt, y: 13pt),
   radius: 3pt,
-  breakable: true,
+  breakable: false,  // a form never splits across pages
   {
     set par(justify: false, first-line-indent: 0pt, leading: 0.62em)
     if title != none {
