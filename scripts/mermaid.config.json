@@ -3,7 +3,14 @@
   "handDrawnSeed": 42,
   "htmlLabels": false,
   "theme": "base",
-  "flowchart": { "htmlLabels": false, "useMaxWidth": true, "curve": "basis", "padding": 9, "nodeSpacing": 25, "rankSpacing": 45 },
+  "flowchart": {
+    "htmlLabels": false,
+    "useMaxWidth": true,
+    "curve": "basis",
+    "padding": 9,
+    "nodeSpacing": 25,
+    "rankSpacing": 45
+  },
   "themeVariables": {
     "fontFamily": "Kalam, Inter",
     "fontSize": "17px",
@@ -29,5 +36,25 @@
     "signalTextColor": "#1A1206",
     "activationBkgColor": "#E9CF95",
     "activationBorderColor": "#AD7A14"
+  },
+  "themeCSS": "text, tspan, .nodeLabel, .edgeLabel, .label, .messageText, .noteText, .loopText, .labelText, .actor tspan { font-weight: bold !important; }",
+  "sequence": {
+    "useMaxWidth": true,
+    "mirrorActors": false,
+    "actorFontSize": 17,
+    "messageFontSize": 17,
+    "noteFontSize": 16,
+    "actorFontWeight": "bold",
+    "messageFontWeight": "bold",
+    "width": 120,
+    "actorMargin": 30,
+    "boxMargin": 8,
+    "messageMargin": 30
+  },
+  "er": {
+    "useMaxWidth": true,
+    "fontSize": 17,
+    "minEntityWidth": 90,
+    "entityPadding": 12
   }
 }

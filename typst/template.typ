@@ -181,7 +181,24 @@
   }
 
   // ─── Code blocks (Kit — ouro-velho left bar) ───────────────────
+  // A line too long for the 6×9 measure wraps; by default the continuation
+  // snaps back to column 0 and breaks the block's indentation. Hang it under
+  // the line's own content instead: its leading spaces plus the list/table/
+  // comment marker it starts with (or 2ch when there is none).
   show raw.where(block: true): it => {
+    show raw.line: it => {
+      let rest = it.text.trim(at: start)
+      let lead = it.text.len() - rest.len()
+      let marker = rest.match(regex("^([-*+] (\[[ xX]\] )?|\d+\. |\| |#+ |// |> )"))
+      let hang = lead + if marker != none { marker.text.len() } else { 2 }
+      // A markdown table row wraps inside its last cell: hang under that cell.
+      // Character (not byte) columns, so accents and dashes don't skew it.
+      let pipes = it.text.clusters().enumerate().filter(((i, c)) => c == "|").map(((i, c)) => i)
+      if rest.starts-with("|") and rest.trim(at: end).ends-with("|") and pipes.len() >= 3 {
+        hang = pipes.at(-2) + 2
+      }
+      box(width: 100%, par(justify: false, first-line-indent: 0pt, hanging-indent: hang * 0.6em, it.body))
+    }
     block(
       width: 100%,
       fill: codebg,
@@ -221,6 +238,10 @@
     },
     inset: (x: 8pt, y: 6pt),
   )
+  // Cells are narrow: body justification + hyphenation turn them into gappy,
+  // broken words. Ragged-right, unhyphenated, a step smaller than body text.
+  show table.cell: set par(justify: false, first-line-indent: 0pt, leading: 0.55em)
+  show table.cell: set text(size: 9.5pt, hyphenate: false)
   show table.cell.where(y: 0): it => {
     set text(
       font: mono,

@@ -209,6 +209,12 @@ line. Precedence: inline `classDef` in a diagram > book file > kit defaults.
 
 Supported types: flowchart/graph, sequenceDiagram, stateDiagram-v2, erDiagram.
 
+A diagram too small to read, a table wrapping one word per line, or a
+code block losing its indentation on wrap are layout problems, not content
+problems — see
+[`docs/diagram-and-layout-fixes.md`](docs/diagram-and-layout-fixes.md) for
+the audit workflow and the fixes that worked.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Math

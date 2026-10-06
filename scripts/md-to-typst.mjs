@@ -12,6 +12,14 @@ import { splitSections, slugify, labelsFor, langFromFilename, frontmatterFiles, 
 import { MITEX_VERSION } from './lib/math.mjs';
 import { PROJECT_ROOT, loadConfig, kitDir } from './lib/config.mjs';
 
+// Mermaid label size (px) — diagram scaling caps labels at a point size.
+const MERMAID_FONT_PX = (() => {
+  try {
+    const cfg = JSON.parse(readFileSync(new URL('./mermaid.config.json', import.meta.url), 'utf8'));
+    return cfg.themeVariables?.fontSize;
+  } catch { return undefined; }
+})();
+
 // Generated Typst output lives in the project; kit-owned modules (template,
 // worksheet) are referenced by absolute-from-root path (prefixed with the kit's
 // submodule dir) so the includes resolve whether the engine is this repo or a
@@ -156,8 +164,41 @@ function renderInline(tokens) {
   return out;
 }
 
+// Size columns by content. `columns: N` gives every column the same width, so a
+// one-word label column steals space from the prose columns and squeezes them
+// into tall, gappy cells. Short columns (labels, IDs) hug their text with
+// `auto`; long ones share the rest as `fr`, weighted by their average length.
+const SHORT_COL = 26;       // chars — at most this long, a column hugs its text
+const AUTO_BUDGET = 0.55;   // share of the text width auto columns may take
+const TEXT_W_PT = 324;      // 4.5in measure
+const autoPt = (chars) => chars * 5.2 + 16;  // ~9.5pt Inter per char + cell inset
+function columnSpec(t) {
+  const n = t.header.length;
+  const rows = [t.header, ...t.rows];
+  const len = (c) => (c?.text || '').replace(/[*_`]/g, '').length;
+  const max = [], avg = [];
+  for (let i = 0; i < n; i++) {
+    const ls = rows.map((r) => len(r[i]));
+    max.push(Math.max(...ls));
+    avg.push(ls.reduce((a, b) => a + b, 0) / ls.length);
+  }
+  const auto = max.map((m) => m <= SHORT_COL);
+  // Too many hugging columns would leave the prose a sliver: demote the longest.
+  const autoTotal = () => max.reduce((s, m, i) => s + (auto[i] ? autoPt(m) : 0), 0);
+  while (auto.some(Boolean) && autoTotal() > AUTO_BUDGET * TEXT_W_PT) {
+    const i = max.reduce((b, m, j) => (auto[j] && (b < 0 || m > max[b]) ? j : b), -1);
+    auto[i] = false;
+  }
+  if (auto.every(Boolean)) return String(n);
+  const base = Math.min(...avg.filter((_, i) => !auto[i]));
+  // sqrt damps the ratio: a column twice as long gets ~1.4x the width, not 2x,
+  // so the shorter prose column never collapses to a word per line.
+  const fr = (i) => Math.min(2.2, Math.sqrt(Math.max(1, avg[i] / base))).toFixed(2);
+  return '(' + auto.map((a, i) => (a ? 'auto' : `${fr(i)}fr`)).join(', ') + ')';
+}
+
 function renderTable(t) {
-  const cols = t.header.length;
+  const cols = columnSpec(t);
   const cells = [];
   for (const h of t.header) {
     cells.push('[' + renderInline(h.tokens) + ']');
@@ -201,6 +242,8 @@ function renderCode(t) {
     // and clips. Bind by the tighter dimension for the diagram's aspect ratio.
     const MAX_W = 4.5; // in — full text width (diagrams read bigger on the page)
     const MAX_H = 6.5;  // in — fits within the 7.3in text height with breathing room
+    const LABEL_PX = parseFloat(MERMAID_FONT_PX) || 17;  // themeVariables.fontSize
+    const MAX_LABEL_PT = 9.5;  // labels a step under the 10.5pt body, never above
     let sizing = `width: ${MAX_W}in`;
     try {
       const svg = readFileSync(resolve(PROJECT_ROOT, 'typst', entry.file), 'utf8');
@@ -208,7 +251,12 @@ function renderCode(t) {
       if (vb) {
         const w = parseFloat(vb[1]), h = parseFloat(vb[2]);
         if (w > 0 && h > 0) {
-          sizing = (w / h >= MAX_W / MAX_H) ? `width: ${MAX_W}in` : `height: ${MAX_H}in`;
+          // Fit inside MAX_W × MAX_H, but never scale a small diagram past the
+          // point where its labels (mermaid fontSize, in px) outgrow MAX_LABEL_PT:
+          // a five-node chart blown up to full width reads like a poster.
+          const maxScale = MAX_LABEL_PT / LABEL_PX / 72;           // in per px
+          const wIn = Math.min(MAX_W, MAX_H * (w / h), w * maxScale);
+          sizing = `width: ${wIn.toFixed(2)}in`;
         }
       }
     } catch { /* fall back to width binding */ }
@@ -276,14 +324,21 @@ function renderHeading(t, demote = 0, frontmatter = false) {
 function renderBlocks(tokens, opts = {}) {
   const demote = opts.demote ?? 0;
   let out = '';
-  for (const t of tokens) {
+  for (const [i, t] of tokens.entries()) {
     switch (t.type) {
       case 'heading':
         out += renderHeading(t, demote, opts.frontmatter);
         break;
-      case 'paragraph':
-        out += renderInline(t.tokens) + '\n\n';
+      case 'paragraph': {
+        // A lead-in ("The main flow:") must not be stranded at the foot of a
+        // page while the diagram, code or table it introduces starts the next.
+        const next = tokens.slice(i + 1).find((x) => x.type !== 'space');
+        const leadIn = /:\s*$/.test(t.text) && ['code', 'table'].includes(next?.type);
+        out += leadIn
+          ? `#block(sticky: true)[${renderInline(t.tokens)}]\n\n`
+          : renderInline(t.tokens) + '\n\n';
         break;
+      }
       case 'text':
         if (t.tokens) out += renderInline(t.tokens) + '\n';
         else out += escapeMarkup(t.text) + '\n';
