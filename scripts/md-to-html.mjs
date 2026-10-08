@@ -4,7 +4,6 @@
 //   dist/html/<lang>/index.html            landing + full contents
 //   dist/html/<lang>/<chapter>.html        one page per preamble/part/chapter/appendix
 //   dist/html/<lang>/assets/               css, js, subset woff2 fonts, cover
-//   dist/html/<lang>/robots.txt            Disallow: / (the site is a reading edition, not indexed)
 //   dist/html/<lang>/pagefind/             search index (added by build.sh)
 //
 // Same sources and the same shared preparation as the EPUB (lib/prepare.mjs):
@@ -20,8 +19,8 @@
 //                buttons on the landing page
 //
 // The site is deliberately not tuned for search engines: every page carries
-// noindex/nofollow and robots.txt disallows everything. (Full-text search for
-// readers, via Pagefind, is a different thing and stays.)
+// noindex/nofollow (and no robots.txt, so nothing advertises where it lives).
+// Full-text search for readers, via Pagefind, is a different thing and stays.
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -416,7 +415,5 @@ for (const page of pages) {
 writeFileSync(resolve(OUT, 'index.html'),
   pageHtml({ page: null, eyebrow: '', h1: '', body: indexBody(), headings: [], description: meta.description, isIndex: true }));
 written.unshift('index.html');
-
-writeFileSync(resolve(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
 
 console.log(`✅ Built: ${OUT.replace(PROJECT_ROOT + '/', '')}/  (${written.length} pages)`);

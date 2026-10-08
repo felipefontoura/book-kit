@@ -64,7 +64,7 @@ produces:
 - **HTML site** — a static, multi-page edition (one page per chapter) you can
   host anywhere: inline SVG diagrams, build-time syntax highlighting, light/dark
   theme, full-text search ([Pagefind](https://pagefind.app)), language switcher.
-  Built for reading, not indexing (`noindex` + `robots.txt`). Checked against the
+  Built for reading, not indexing (`noindex`, no robots.txt or sitemap). Checked against the
   source by `verify-html.mjs`, and zipped for offline use.
 - **Cover** — a KDP-compatible PNG rendered by Typst from your config strings.
 
