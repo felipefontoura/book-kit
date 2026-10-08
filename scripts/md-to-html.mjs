@@ -15,14 +15,15 @@
 // Optional `html` block in book.config.json:
 //   chapters     e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
 //                preview); the rest stay listed in the contents, greyed out
-//   downloadUrl  where readers get the PDF/EPUB; adds a "Download" link to the header
-//                and the landing page
+//   downloadUrl  where readers get the PDF/EPUB ({lang} is replaced by pt-br | en); adds a
+//                "Download" link to the header and the landing page
 //
 // The site is deliberately not tuned for search engines: every page carries
 // noindex/nofollow and robots.txt disallows everything. (Full-text search for
 // readers, via Pagefind, is a different thing and stays.)
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { frontmatterFiles, labelsFor, langFromFilename, baseLangFromFilename, slugify as baseSlugify } from './lib/chapter-splitter.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
@@ -44,7 +45,7 @@ const { cfg, L, langTag, meta } = loadMeta(baseLang);
 const labels = labelsFor(MD);
 const ui = uiFor(baseLang, L.ui);
 const htmlCfg = cfg.html ?? {};
-const downloadUrl = htmlCfg.downloadUrl || '';
+const downloadUrl = (htmlCfg.downloadUrl || '').replaceAll('{lang}', rawLang);   // {lang} → pt-br | en
 const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => String(c).toUpperCase()) : null;
 
 const OUT = resolve(PROJECT_ROOT, 'dist/html', rawLang);
@@ -277,7 +278,7 @@ function plainDescription(html, fallback) {
   return t.slice(0, 157).replace(/\s+\S*$/, '') + '…';
 }
 
-const fontsAndCss = { css: '', preload: [] };   // filled before pages are written
+const fontsAndCss = { css: '', preload: [], cssV: '', jsV: '' };   // filled before pages are written
 
 function pageHtml({ page, eyebrow, h1, body, headings, description, isIndex = false }) {
   const file = isIndex ? 'index.html' : page.file;
@@ -299,7 +300,7 @@ ${next ? `<a class="next" rel="next" href="${next.file}"><small>${escapeHtml(ui.
 <ol>${headings.map((h) => `<li${h.level === 3 ? ' class="sub"' : ''}><a href="#${h.id}">${escapeHtml(unescapeHtml(h.text))}</a></li>`).join('')}</ol>
 </aside>` : '';
 
-  const article = isIndex ? body : `<article class="page${page.kind === 'part' ? ' part-page' : ''}" data-pagefind-body${page.kind === 'part' ? ' data-pagefind-ignore' : ''}>
+  const article = isIndex ? body : `<article class="page${page.kind === 'part' ? ' part-page' : ''}" data-pagefind-body${eyebrow ? ` data-pagefind-meta="label:${escapeHtml(eyebrow)}"` : ''}${page.kind === 'part' ? ' data-pagefind-ignore' : ''}>
 ${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ''}
 <h1>${h1}</h1>
 ${body}
@@ -322,7 +323,7 @@ ${footer()}
 <meta name="theme-color" content="#14120F" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="${FAVICON}">
 ${fontsAndCss.preload.map((f) => `<link rel="preload" href="${f}" as="font" type="font/woff2" crossorigin>`).join('\n')}
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/site.css?v=${fontsAndCss.cssV}">
 <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
@@ -346,7 +347,7 @@ ${article}
 ${aside}
 </div>
 <script type="application/json" id="ui-strings">${JSON.stringify({ ...ui, diagram: labels.diagram }).replace(/</g, '\\u003c')}</script>
-<script src="assets/site.js" defer></script>
+<script src="assets/site.js?v=${fontsAndCss.jsV}" defer></script>
 </body>
 </html>
 `;
@@ -386,8 +387,14 @@ mkdirSync(resolve(OUT, 'assets'), { recursive: true });
 const siteText = rawSource + JSON.stringify(L) + Object.values(ui).filter((v) => typeof v === 'string').join('');
 const fonts = await buildSiteFonts({ text: siteText, outDir: OUT });
 fontsAndCss.preload = fonts.preload;
-writeFileSync(resolve(OUT, 'assets/site.css'), fonts.css + '\n' + readFileSync(resolve(KIT_ROOT, 'scripts/html/site.css'), 'utf8'));
-copyFileSync(resolve(KIT_ROOT, 'scripts/html/site.js'), resolve(OUT, 'assets/site.js'));
+// Content hashes in the asset URLs: a redeploy is never masked by a cached stylesheet/script.
+const cssText = fonts.css + '\n' + readFileSync(resolve(KIT_ROOT, 'scripts/html/site.css'), 'utf8');
+const jsText = readFileSync(resolve(KIT_ROOT, 'scripts/html/site.js'), 'utf8');
+const hash = (t) => createHash('sha1').update(t).digest('hex').slice(0, 8);
+fontsAndCss.cssV = hash(cssText);
+fontsAndCss.jsV = hash(jsText);
+writeFileSync(resolve(OUT, 'assets/site.css'), cssText);
+writeFileSync(resolve(OUT, 'assets/site.js'), jsText);
 if (existsSync(COVER)) copyFileSync(COVER, resolve(OUT, 'assets/cover.png'));
 else console.warn(`⚠ Cover not found (${COVER}); the landing page will have no image.`);
 console.log(`▸ Fonts: ${(fonts.bytes / 1024).toFixed(0)} KB woff2 (subset).`);

@@ -109,7 +109,8 @@ for (const f of files) {
   for (const m of html.matchAll(/\s(?:href|src)="([^"]*)"/g)) {
     const url = m[1];
     if (!url || /^(https?:|mailto:|data:|\/\/)/.test(url)) continue;
-    const [path, frag] = url.split('#');
+    const [pathQ, frag] = url.split('#');
+    const path = pathQ.split('?')[0];   // cache-busting ?v=hash is not part of the file name
     // Links to another language's site are only checkable when that site was built too.
     if (path.startsWith('../') && !existsSync(resolve(SITE, '..', path.split('/')[1]))) continue;
     const target = path ? resolve(SITE, dirname(f), path) : null;

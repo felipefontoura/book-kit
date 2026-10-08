@@ -9,14 +9,10 @@ const UI = {
     copy: 'copy', copied: 'copied', copyFailed: 'failed', expand: 'expand', close: 'close',
     startReading: 'Start reading', download: 'Download PDF/EPUB', copyright: 'Copyright', anchor: 'Link to this section',
     notIncluded: 'Not in this edition. Available in the PDF and EPUB.', home: 'Book home',
-    pagefind: {
-      placeholder: 'Search the book', clear_search: 'Clear', load_more: 'Load more results',
-      search_label: 'Search this book', zero_results: 'No results for [SEARCH_TERM]',
-      many_results: '[COUNT] results for [SEARCH_TERM]', one_result: '[COUNT] result for [SEARCH_TERM]',
-      searching: 'Searching for [SEARCH_TERM]…', filters_label: 'Filters',
-      alt_search: 'No results for [SEARCH_TERM]. Showing results for [DIFFERENT_TERM] instead',
-      search_suggestion: 'No results for [SEARCH_TERM]. Try one of these instead:',
-    },
+    searchPlaceholder: 'Search the book…', searchEmpty: 'Type to search every chapter.',
+    searchNone: 'No results for', searchLoading: 'Searching…', searchError: 'Search is unavailable here.',
+    searchHintMove: 'navigate', searchHintOpen: 'open', searchHintClose: 'close',
+    searchCount: ['result', 'results'], inSection: 'in',
   },
   pt: {
     contents: 'Sumário', onThisPage: 'Nesta página', next: 'Próximo', prev: 'Anterior',
@@ -24,14 +20,10 @@ const UI = {
     copy: 'copiar', copied: 'copiado', copyFailed: 'falhou', expand: 'ampliar', close: 'fechar',
     startReading: 'Começar a ler', download: 'Baixar PDF/EPUB', copyright: 'Direitos autorais', anchor: 'Link para esta seção',
     notIncluded: 'Fora desta edição. Disponível no PDF e no EPUB.', home: 'Início do livro',
-    pagefind: {
-      placeholder: 'Buscar no livro', clear_search: 'Limpar', load_more: 'Mais resultados',
-      search_label: 'Buscar neste livro', zero_results: 'Nenhum resultado para [SEARCH_TERM]',
-      many_results: '[COUNT] resultados para [SEARCH_TERM]', one_result: '[COUNT] resultado para [SEARCH_TERM]',
-      searching: 'Buscando [SEARCH_TERM]…', filters_label: 'Filtros',
-      alt_search: 'Nenhum resultado para [SEARCH_TERM]. Mostrando resultados para [DIFFERENT_TERM]',
-      search_suggestion: 'Nenhum resultado para [SEARCH_TERM]. Tente um destes:',
-    },
+    searchPlaceholder: 'Buscar no livro…', searchEmpty: 'Digite para buscar em todos os capítulos.',
+    searchNone: 'Nenhum resultado para', searchLoading: 'Buscando…', searchError: 'A busca não está disponível aqui.',
+    searchHintMove: 'navegar', searchHintOpen: 'abrir', searchHintClose: 'fechar',
+    searchCount: ['resultado', 'resultados'], inSection: 'em',
   },
 };
 UI.es = {
@@ -41,16 +33,13 @@ UI.es = {
   copy: 'copiar', copied: 'copiado', copyFailed: 'falló', expand: 'ampliar', close: 'cerrar',
   startReading: 'Empezar a leer', download: 'Descargar PDF/EPUB', copyright: 'Derechos de autor', anchor: 'Enlace a esta sección',
   notIncluded: 'Fuera de esta edición. Disponible en el PDF y el EPUB.', home: 'Inicio del libro',
-  pagefind: {
-    ...UI.pt.pagefind,
-    placeholder: 'Buscar en el libro', clear_search: 'Borrar', load_more: 'Más resultados',
-    search_label: 'Buscar en este libro', zero_results: 'Sin resultados para [SEARCH_TERM]',
-    many_results: '[COUNT] resultados para [SEARCH_TERM]', one_result: '[COUNT] resultado para [SEARCH_TERM]',
-    searching: 'Buscando [SEARCH_TERM]…',
-  },
+  searchPlaceholder: 'Buscar en el libro…', searchEmpty: 'Escribe para buscar en todos los capítulos.',
+  searchNone: 'Sin resultados para', searchLoading: 'Buscando…', searchError: 'La búsqueda no está disponible aquí.',
+  searchHintMove: 'navegar', searchHintOpen: 'abrir', searchHintClose: 'cerrar',
+  searchCount: ['resultado', 'resultados'], inSection: 'en',
 };
 
 export function uiFor(baseLang, overrides = {}) {
   const base = UI[baseLang] ?? UI.en;
-  return { ...base, ...overrides, pagefind: { ...base.pagefind, ...(overrides.pagefind ?? {}) } };
+  return { ...base, ...overrides };
 }

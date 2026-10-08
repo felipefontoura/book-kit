@@ -81,45 +81,104 @@
     byId.forEach((_, id) => { const h = document.getElementById(id); if (h) io.observe(h); });
   }
 
-  // ── Search (Pagefind, built after the pages) ─────────────────────
+  // ── Search (Pagefind JS API, our own UI) ─────────────────────────
+  // A command-palette: results grouped by chapter, sections underneath, keyboard
+  // driven (↑ ↓ ↵ esc). The index is built by `pagefind` after the pages.
   const sbtn = $('.search-btn');
-  // Pagefind fetches its index, which browsers block on file:// (e.g. the downloaded zip).
-  if (sbtn && location.protocol === 'file:') sbtn.hidden = true;
+  if (sbtn && location.protocol === 'file:') sbtn.hidden = true;   // Pagefind fetches its index; file:// blocks that
   else if (sbtn) {
-    let dlg;
-    const open = async () => {
-      if (!dlg) {
-        dlg = document.createElement('dialog');
-        dlg.className = 'search';
-        dlg.setAttribute('aria-label', ui.search || 'Search');
-        dlg.innerHTML = '<div class="search-body"><div id="search"></div></div>';
-        document.body.append(dlg);
-        dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-        const base = new URL(document.baseURI);
-        const root = $('meta[name="site-root"]')?.content || './';
-        const css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = new URL(root + 'pagefind/pagefind-ui.css', base).href;
-        document.head.append(css);
-        await new Promise((ok, fail) => {
-          const s = document.createElement('script');
-          s.src = new URL(root + 'pagefind/pagefind-ui.js', base).href;
-          s.onload = ok; s.onerror = fail;
-          document.head.append(s);
-        });
-        new PagefindUI({
-          element: '#search', showSubResults: true, resetStyles: false,
-          baseUrl: new URL(root, base).pathname, translations: ui.pagefind || {},
-        });
-      }
-      dlg.showModal();
-      $('input', dlg)?.focus();
+    const root = new URL($('meta[name="site-root"]')?.content || './', document.baseURI);
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let dlg, input, list, count, pf, timer, seq = 0;
+
+    const build = () => {
+      dlg = document.createElement('dialog');
+      dlg.className = 'search';
+      dlg.setAttribute('aria-label', ui.search);
+      dlg.innerHTML = `
+        <div class="s-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" role="combobox" aria-expanded="true" aria-controls="s-list" autocomplete="off" spellcheck="false" placeholder="${esc(ui.searchPlaceholder)}" aria-label="${esc(ui.search)}">
+          <button type="button" class="s-esc" aria-label="${esc(ui.close)}"><kbd>esc</kbd></button>
+        </div>
+        <div class="s-body" id="s-list" role="listbox"></div>
+        <div class="s-foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> ${esc(ui.searchHintMove)}</span>
+          <span><kbd>↵</kbd> ${esc(ui.searchHintOpen)}</span>
+          <span><kbd>esc</kbd> ${esc(ui.searchHintClose)}</span>
+          <span class="s-count" aria-live="polite"></span>
+        </div>`;
+      document.body.append(dlg);
+      input = $('input', dlg); list = $('.s-body', dlg); count = $('.s-count', dlg);
+      note(ui.searchEmpty);
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      $('.s-esc', dlg).addEventListener('click', () => dlg.close());
+      input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
+      dlg.addEventListener('keydown', onKey);
     };
-    sbtn.addEventListener('click', () => open().catch(() => { dlg?.close(); sbtn.hidden = true; }));
+
+    const note = (msg, cls = '') => { list.innerHTML = `<p class="s-note ${cls}">${msg}</p>`; count.textContent = ''; };
+    const links = () => $$('a.s-hit', list);
+    const setActive = (i) => {
+      const all = links(); if (!all.length) return;
+      const n = (i + all.length) % all.length;
+      all.forEach((a, k) => { a.classList.toggle('active', k === n); a.setAttribute('aria-selected', String(k === n)); });
+      all[n].scrollIntoView({ block: 'nearest' });
+    };
+    const onKey = (e) => {
+      const all = links(); const cur = all.findIndex((a) => a.classList.contains('active'));
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(cur + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(cur < 0 ? all.length - 1 : cur - 1); }
+      else if (e.key === 'Enter' && all.length) { e.preventDefault(); (all[cur] || all[0]).click(); }
+    };
+
+    const load = async () => {
+      if (pf) return pf;
+      pf = await import(new URL('pagefind/pagefind.js', root).href);
+      await pf.options({ baseUrl: root.pathname, excerptLength: 18 });
+      return pf;
+    };
+
+    const run = async () => {
+      const q = input.value.trim();
+      const my = ++seq;
+      if (!q) return note(ui.searchEmpty);
+      try {
+        const api = await load();
+        list.setAttribute('aria-busy', 'true');
+        const res = await api.search(q);
+        if (my !== seq) return;
+        const hits = await Promise.all(res.results.slice(0, 8).map((r) => r.data()));
+        if (my !== seq) return;
+        list.removeAttribute('aria-busy');
+        if (!hits.length) return note(`${esc(ui.searchNone)} <strong>“${esc(q)}”</strong>`);
+        list.innerHTML = hits.map((h) => {
+          const label = h.meta?.label ? `<span class="s-chip">${esc(h.meta.label)}</span>` : '';
+          const subs = (h.sub_results || []).filter((s) => s.anchor).slice(0, 3);
+          return `<section class="s-group">
+            <a class="s-hit s-page" role="option" href="${esc(h.url)}"><span class="s-title">${esc(h.meta?.title || '')}</span>${label}<span class="s-ex">${h.excerpt}</span></a>
+            ${subs.map((s) => `<a class="s-hit s-sub" role="option" href="${esc(s.url)}"><span class="s-sec">${esc(s.title)}</span><span class="s-ex">${s.excerpt}</span></a>`).join('')}
+          </section>`;
+        }).join('');
+        const n = res.results.length;
+        count.textContent = `${n} ${ui.searchCount[n === 1 ? 0 : 1]}`;
+        setActive(0);
+      } catch {
+        if (my === seq) note(esc(ui.searchError), 'err');
+      }
+    };
+
+    const open = () => {
+      if (!dlg) build();
+      dlg.showModal();
+      input.focus(); input.select();
+      load().catch(() => {});   // warm the index while the reader types
+    };
+    sbtn.addEventListener('click', open);
     addEventListener('keydown', (e) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
       if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
-        e.preventDefault(); sbtn.click();
+        e.preventDefault(); dlg?.open ? dlg.close() : open();
       }
     });
   }
