@@ -14,9 +14,10 @@
 // Optional `html` block in book.config.json:
 //   chapters     e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
 //                preview); the rest stay listed in the contents, greyed out
-//   downloads    [{ "kind": "pdf" | "epub" | "zip", "url": "https://…/{lang}/pdf" }] direct
-//                download links ({lang} becomes pt-br | en): a menu in the header and
-//                buttons on the landing page
+//   downloads    where readers get the PDF/EPUB: [{ "kind": "pdf" | "epub" | "zip" | "page",
+//                "url": "…" }], or { "pt": [...], "en": [...] } for per-language links
+//                ({lang} becomes pt-br | en). One entry is a plain "Download" link in the
+//                header and on the landing page; several are a menu and buttons
 //
 // The site is deliberately not tuned for search engines: every page carries
 // noindex/nofollow (and no robots.txt, so nothing advertises where it lives).
@@ -45,11 +46,16 @@ const { cfg, L, langTag, meta } = loadMeta(baseLang);
 const labels = labelsFor(MD);
 const ui = uiFor(baseLang, L.ui);
 const htmlCfg = cfg.html ?? {};
-// Direct download links ({lang} → pt-br | en): [{ kind: "pdf" | "epub" | "zip", url }].
-const downloads = (htmlCfg.downloads || []).map((d) => ({
-  kind: d.kind,
+// Download links, per language or for all: an array, or { "pt": [...], "en": [...] }.
+// Each is { kind: "pdf" | "epub" | "zip" | "page", url } ({lang} becomes pt-br | en).
+// pdf/epub/zip are files; "page" is a landing page (e.g. a sign-up). One entry is a plain
+// link, several are a menu.
+const downloadList = Array.isArray(htmlCfg.downloads) ? htmlCfg.downloads : (htmlCfg.downloads?.[baseLang] ?? []);
+const FILE_KINDS = new Set(['pdf', 'epub', 'zip']);
+const downloads = downloadList.map((d) => ({
+  file: FILE_KINDS.has(d.kind),
   url: String(d.url).replaceAll('{lang}', rawLang),
-  label: d.kind === 'zip' ? ui.downloadZip : d.kind.toUpperCase(),
+  label: d.kind === 'zip' ? ui.downloadZip : FILE_KINDS.has(d.kind) ? d.kind.toUpperCase() : ui.download,
 }));
 const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => String(c).toUpperCase()) : null;
 
@@ -338,7 +344,7 @@ ${isIndex ? '' : `<button class="hbtn menu-btn" type="button" aria-controls="sid
 <a class="brand" href="index.html" title="${escapeHtml(ui.home)}">${escapeHtml(meta.title)}</a>
 <button class="hbtn search-btn" type="button" aria-label="${escapeHtml(ui.search)}" data-needs-js>${ICON.search}<span>${escapeHtml(ui.search)}</span><kbd>/</kbd></button>
 ${alts.map((a) => `<a class="hbtn" lang="${a.langTag}" href="../${a.lang}/${a.file}">${escapeHtml(a.name)}</a>`).join('')}
-${downloads.length ? `<details class="dl-menu"><summary class="hbtn download-btn" aria-label="${escapeHtml(ui.download)}">${ICON.download}<span>${escapeHtml(ui.download)}</span></summary><div class="dl-pop">${downloads.map((d) => `<a rel="noopener" href="${escapeHtml(d.url)}" download>${escapeHtml(d.label)}</a>`).join('')}</div></details>` : ''}
+${downloads.length === 1 ? `<a class="hbtn download-btn" rel="noopener" href="${escapeHtml(downloads[0].url)}"${downloads[0].file ? ' download' : ''}>${ICON.download}<span>${escapeHtml(ui.download)}</span></a>` : downloads.length ? `<details class="dl-menu"><summary class="hbtn download-btn" aria-label="${escapeHtml(ui.download)}">${ICON.download}<span>${escapeHtml(ui.download)}</span></summary><div class="dl-pop">${downloads.map((d) => `<a rel="noopener" href="${escapeHtml(d.url)}"${d.file ? ' download' : ''}>${escapeHtml(d.label)}</a>`).join('')}</div></details>` : ''}
 <button class="hbtn theme-btn" type="button" aria-label="${escapeHtml(ui.theme)}" data-needs-js>${ICON.sun}${ICON.moon}</button>
 </header>
 <div class="scrim"></div>
@@ -376,7 +382,7 @@ function indexBody() {
 <h1>${escapeHtml(meta.title)}</h1>
 <p class="subtitle">${escapeHtml(meta.subtitle)}</p>
 <p class="desc">${escapeHtml(meta.description)}</p>
-<p class="actions"><a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>${downloads.map((d) => `<a class="cta alt" rel="noopener" href="${escapeHtml(d.url)}" download>${ICON.download}${escapeHtml(d.label)}</a>`).join('')}</p>
+<p class="actions"><a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>${downloads.map((d) => `<a class="cta alt" rel="noopener" href="${escapeHtml(d.url)}"${d.file ? ' download' : ''}>${ICON.download}${escapeHtml(d.label)}</a>`).join('')}</p>
 </div>
 </section>
 <div class="index-toc" data-pagefind-ignore>${tocHtml(null, 'toc')}</div>

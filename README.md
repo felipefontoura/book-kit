@@ -176,7 +176,7 @@ language (`languages.pt`, `languages.en`, …):
 | `description`, `langTag` | EPUB metadata + HTML `<meta>` |
 | `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
-| top-level `html.downloads` (optional) | `[{kind: "pdf"|"epub"|"zip", url}]`, `{lang}` allowed: a download menu in the site header and buttons on the landing page |
+| top-level `html.downloads` (optional) | `[{kind: "pdf"|"epub"|"zip"|"page", url}]` or `{pt: [...], en: [...]}`, `{lang}` allowed: one entry is a "Download" link in the header and landing, several are a menu |
 | top-level `html.chapters` (optional) | e.g. `[1, 2, "A"]`: publish only these chapters/appendices (a free preview); the rest stay listed, greyed out |
 | `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
 
