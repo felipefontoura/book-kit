@@ -363,8 +363,8 @@ The bundled fonts are under the **SIL Open Font License 1.1** — see
 
 ## Contact
 
-Felipe Fontoura — [felipefontoura.com](https://felipefontoura.com) ·
-[Contact](https://felipefontoura.com/contact/?utm_source=github&utm_medium=readme&utm_campaign=book-kit) ·
+Felipe Fontoura — [felipefontoura.com](https://felipefontoura.com/?utm_source=github&utm_medium=referral&utm_campaign=book-kit&utm_content=readme) ·
+[Contact](https://felipefontoura.com/contact/?utm_source=github&utm_medium=referral&utm_campaign=book-kit&utm_content=readme) ·
 [@felipefontoura](https://github.com/felipefontoura)
 
 ## Acknowledgments
