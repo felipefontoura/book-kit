@@ -4,7 +4,7 @@
 
 # book-kit
 
-**Write a book in Markdown. Get a print-ready PDF, an EPUB 3, and a KDP cover.**
+**Write a book in Markdown. Get a print-ready PDF, an EPUB 3, a static HTML site, and a KDP cover.**
 
 A portable Typst build engine with editorial print typography, hand-drawn
 Mermaid diagrams, LaTeX math, and diagnostic worksheets — shared across many
@@ -61,6 +61,11 @@ produces:
   appendices, generated TOC, running headers, and a warm paper palette tuned
   for ink.
 - **EPUB 3** — reflowable, conservative CSS, working navigation, MathML.
+- **HTML site** — a static, multi-page edition (one page per chapter) you can
+  host anywhere: inline SVG diagrams, build-time syntax highlighting, light/dark
+  theme, full-text search ([Pagefind](https://pagefind.app)), language switcher.
+  Built for reading, not indexing (`noindex`, no robots.txt or sitemap). Checked against the
+  source by `verify-html.mjs`, and zipped for offline use.
 - **Cover** — a KDP-compatible PNG rendered by Typst from your config strings.
 
 The engine is consumed as a **git submodule**: every book inherits the same
@@ -119,6 +124,7 @@ Typst where the engine is mounted. Outputs land in `dist/`.
 ```bash
 bash kit/scripts/build.sh --pdf          # fastest iteration on print layout
 bash kit/scripts/build.sh --epub         # EPUB + cover only
+bash kit/scripts/build.sh --html         # HTML site (dist/html/<lang>/), indexed + verified
 SOURCE_MD=BOOK.en.md bash kit/scripts/build.sh   # force a source file
 git submodule update --remote kit        # pull engine updates later
 ```
@@ -167,8 +173,11 @@ language (`languages.pt`, `languages.en`, …):
 | `tocName` | table-of-contents heading |
 | `cover.{title,subtitle,label}` | the KDP cover (`cover.typ`) |
 | `preambleTitle`, `partsLabel`, `appendixLabel` | section labels + EPUB navigation |
-| `description`, `langTag` | EPUB metadata |
+| `description`, `langTag` | EPUB metadata + HTML `<meta>` |
+| `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
+| top-level `html.downloads` (optional) | `[{kind: "pdf"|"epub"|"zip"|"page", url}]` or `{pt: [...], en: [...]}`, `{lang}` allowed: one entry is a "Download" link in the header and landing, several are a menu |
+| top-level `html.chapters` (optional) | e.g. `[1, 2, "A"]`: publish only these chapters/appendices (a free preview); the rest stay listed, greyed out |
 | `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
 
 The template owns *layout*, the config owns *words*: to change the copyright
@@ -273,7 +282,7 @@ your-book/                     ← the book repo (content + one config)
 ├── frontmatter/               ← optional dedication/epigraph pages
 ├── typst/ · dist/             ← GENERATED (gitignore them)
 └── kit/                       ← this repo, as a git submodule
-    ├── scripts/               build.sh · md-to-typst · md-to-epub · render-mermaid · lib/
+    ├── scripts/               build.sh · md-to-typst · md-to-epub · md-to-html · verify-html · render-mermaid · html/ · lib/
     ├── typst/                 book.typ · template.typ · cover.typ · worksheet.typ
     └── typst/assets/fonts/    Newsreader · Inter · JetBrains Mono · Kalam (bundled, OFL)
 ```
@@ -292,8 +301,16 @@ Typst compiles with `--root PROJECT_ROOT`; kit modules are imported with
 
 The pipeline: `render-mermaid.mjs` (fences → SVGs + manifest) →
 `md-to-typst.mjs` (marked tokens → Typst chapters) → `typst compile` → PDF;
-in parallel, `cover.typ` → PNG and `md-to-epub.mjs` → EPUB 3 (with MathML
-repair in `lib/epub-mathml-fix.mjs`).
+in parallel, `cover.typ` → PNG, `md-to-epub.mjs` → EPUB 3 (with MathML
+repair in `lib/epub-mathml-fix.mjs`) and `md-to-html.mjs` → HTML site →
+`pagefind` (search index) → `verify-html.mjs` (parity + link check).
+EPUB and HTML share `lib/prepare.mjs` (wikilinks, diagram substitution, title
+block, math), so both formats see exactly the same content.
+
+The HTML site is plain files with relative links: pages are flat `.html`
+(no directory-index rules needed), so it works from `file://`, any static host
+and S3/R2-style buckets. Diagrams are inlined as SVG with unique ids and Kalam
+shipped as a subset woff2; fonts are subset to the characters your book uses.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
