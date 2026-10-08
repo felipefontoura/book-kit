@@ -346,17 +346,17 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
 <body>
 <a class="skip-link" href="#content">${escapeHtml(ui.skip)}</a>
 <header class="site-header">
-<button class="hbtn menu-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="${escapeHtml(ui.menu)}" data-needs-js>${ICON.menu}</button>
+${isIndex ? '' : `<button class="hbtn menu-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="${escapeHtml(ui.menu)}" data-needs-js>${ICON.menu}</button>`}
 <a class="brand" href="index.html" title="${escapeHtml(ui.home)}">${escapeHtml(meta.title)}</a>
 <button class="hbtn search-btn" type="button" aria-label="${escapeHtml(ui.search)}" data-needs-js>${ICON.search}<span>${escapeHtml(ui.search)}</span><kbd>/</kbd></button>
 ${alts.map((a) => `<a class="hbtn" hreflang="${a.langTag}" lang="${a.langTag}" href="../${a.lang}/${a.file}">${escapeHtml(a.name)}</a>`).join('')}
 <button class="hbtn theme-btn" type="button" aria-label="${escapeHtml(ui.theme)}" data-needs-js>${ICON.sun}${ICON.moon}</button>
 </header>
 <div class="scrim"></div>
-<div class="layout${aside ? '' : ' no-aside'}">
-<aside class="sidebar" id="sidebar">
-${tocHtml(isIndex ? null : page)}
-</aside>
+<div class="layout${aside ? '' : ' no-aside'}${isIndex ? ' no-sidebar' : ''}">
+${isIndex ? '' : `<aside class="sidebar" id="sidebar">
+${tocHtml(page)}
+</aside>`}
 <main id="content">
 ${article}
 </main>
