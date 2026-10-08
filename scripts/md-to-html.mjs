@@ -16,7 +16,9 @@
 //                preview); the rest stay listed in the contents, greyed out
 //   downloads    where readers get the PDF/EPUB: [{ "kind": "pdf" | "epub" | "zip" | "page",
 //                "url": "…" }], or { "pt": [...], "en": [...] } for per-language links
-//                ({lang} becomes pt-br | en). One entry is a plain "Download" link in the
+//                ({lang} becomes pt-br | en). If the target is the host serving this edition, use
+//                `?ref=` and never `utm_*`: an on-site UTM overwrites GA4's session source.
+//                One entry is a plain "Download" link in the
 //                header and on the landing page; several are a menu and buttons
 //
 // The site is deliberately not tuned for search engines: every page carries
