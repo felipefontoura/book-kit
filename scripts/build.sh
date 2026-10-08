@@ -60,6 +60,7 @@ PDF="$DIST/book-$lang.pdf"
 EPUB="$DIST/book-$lang.epub"
 COVER="$DIST/cover-$lang.png"
 HTML="$DIST/html/$lang"
+HTML_ZIP="$DIST/book-$lang-html.zip"
 
 # Metadata for cover renderer — read from book.config.json (single source of
 # truth). CFG_LANG is the base language key (pt-br → pt).
@@ -130,6 +131,11 @@ if [[ "$target" == "html" || "$target" == "all" ]]; then
   echo "▸ Verifying HTML against the source..."
   node "$KIT_ROOT/scripts/verify-html.mjs"
   echo "   HTML: $HTML ($(du -sh "$HTML" | cut -f1))"
+
+  # Offline copy: the same folder, zipped (open index.html; search needs http).
+  rm -f "$HTML_ZIP"
+  (cd "$DIST/html" && zip -qr -X "$HTML_ZIP" "$lang")
+  echo "   ZIP:  $HTML_ZIP ($(du -h "$HTML_ZIP" | cut -f1))"
 fi
 
 echo ""

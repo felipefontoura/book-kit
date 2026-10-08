@@ -4,7 +4,7 @@
 //   dist/html/<lang>/index.html            landing + full contents
 //   dist/html/<lang>/<chapter>.html        one page per preamble/part/chapter/appendix
 //   dist/html/<lang>/assets/               css, js, subset woff2 fonts, cover
-//   dist/html/<lang>/sitemap.xml           (only when html.baseUrl is configured)
+//   dist/html/<lang>/robots.txt            Disallow: / (the site is a reading edition, not indexed)
 //   dist/html/<lang>/pagefind/             search index (added by build.sh)
 //
 // Same sources and the same shared preparation as the EPUB (lib/prepare.mjs):
@@ -13,10 +13,14 @@
 // file://, any static host and S3/R2-style buckets with no directory-index rules.
 //
 // Optional `html` block in book.config.json:
-//   baseUrl   absolute URL of the folder that holds <lang>/ — enables canonical,
-//             hreflang, og:image and sitemap.xml ($HTML_BASE_URL overrides it)
-//   chapters  e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
-//             preview); the rest stay listed in the contents, greyed out
+//   chapters     e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
+//                preview); the rest stay listed in the contents, greyed out
+//   downloadUrl  where readers get the PDF/EPUB; adds a "Download" link to the header
+//                and the landing page
+//
+// The site is deliberately not tuned for search engines: every page carries
+// noindex/nofollow and robots.txt disallows everything. (Full-text search for
+// readers, via Pagefind, is a different thing and stays.)
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -40,8 +44,7 @@ const { cfg, L, langTag, meta } = loadMeta(baseLang);
 const labels = labelsFor(MD);
 const ui = uiFor(baseLang, L.ui);
 const htmlCfg = cfg.html ?? {};
-// HTML_BASE_URL (set by CI, which owns where the site is hosted) wins over the config.
-const baseUrl = (process.env.HTML_BASE_URL || htmlCfg.baseUrl || '').replace(/\/+$/, '');
+const downloadUrl = htmlCfg.downloadUrl || '';
 const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => String(c).toUpperCase()) : null;
 
 const OUT = resolve(PROJECT_ROOT, 'dist/html', rawLang);
@@ -101,7 +104,7 @@ const isIncluded = (p) => {
 };
 const flow = pages.filter((p) => p.kind !== 'part' && isIncluded(p));   // reading order
 
-// Other editions that exist next to this one, for the language switcher and hreflang.
+// Other editions that exist next to this one, for the language switcher.
 const alternates = readdirSync(PROJECT_ROOT)
   .filter((f) => /^BOOK\.[A-Za-z-]+\.md$/.test(f) && resolve(PROJECT_ROOT, f) !== MD)
   .map((f) => {
@@ -232,12 +235,11 @@ const ICON = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   sun: '<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>',
   moon: '<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
 };
 const FAVICON = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#14120F"/><rect x="8" y="7" width="16" height="3" rx="1.5" fill="#D9A441"/><rect x="8" y="14.5" width="16" height="3" rx="1.5" fill="#D9A441" opacity=".7"/><rect x="8" y="22" width="10" height="3" rx="1.5" fill="#D9A441" opacity=".45"/></svg>');
-
-const absUrl = (file) => (baseUrl ? `${baseUrl}/${rawLang}/${file === 'index.html' ? '' : file}` : '');
 
 function tocItem(p, current, withNum = true) {
   const num = withNum && p.num ? `<span class="num">${escapeHtml(p.num)}</span>` : '';
@@ -280,22 +282,10 @@ const fontsAndCss = { css: '', preload: [] };   // filled before pages are writt
 function pageHtml({ page, eyebrow, h1, body, headings, description, isIndex = false }) {
   const file = isIndex ? 'index.html' : page.file;
   const title = isIndex ? `${meta.title}: ${meta.subtitle}` : `${page.title} · ${meta.title}`;
-  const canonical = absUrl(file);
   const alts = alternates.map((a) => {
     const target = isIndex ? { file: 'index.html' } : counterpart(page, a);
     return { ...a, file: target.file };
   });
-  const jsonLd = isIndex
-    ? { '@context': 'https://schema.org', '@type': 'Book', name: meta.title, alternativeHeadline: meta.subtitle,
-        author: { '@type': 'Person', name: meta.author }, publisher: meta.publisher, inLanguage: langTag,
-        description: meta.description, license: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
-        ...(baseUrl && { url: canonical, image: `${baseUrl}/${rawLang}/assets/cover.png` }) }
-    : page.kind === 'chapter' || page.kind === 'appendix'
-      ? { '@context': 'https://schema.org', '@type': 'Chapter', name: page.title, inLanguage: langTag,
-          isPartOf: { '@type': 'Book', name: meta.title, author: { '@type': 'Person', name: meta.author } },
-          ...(baseUrl && { url: canonical }) }
-      : null;
-
   const i = flow.indexOf(page);
   const prev = !isIndex && i > 0 ? flow[i - 1] : null;
   const next = !isIndex && i >= 0 && i < flow.length - 1 ? flow[i + 1] : null;
@@ -325,24 +315,15 @@ ${footer()}
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <meta name="author" content="${escapeHtml(meta.author)}">
+<meta name="robots" content="noindex, nofollow">
 <meta name="site-root" content="./">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14120F" media="(prefers-color-scheme: dark)">
-${canonical ? `<link rel="canonical" href="${canonical}">` : ''}
-${baseUrl ? alts.map((a) => `<link rel="alternate" hreflang="${a.langTag}" href="${baseUrl}/${a.lang}/${a.file === 'index.html' ? '' : a.file}">`).join('\n') : ''}
-${baseUrl ? `<link rel="alternate" hreflang="${langTag}" href="${canonical}">` : ''}
-<meta property="og:type" content="${isIndex ? 'book' : 'article'}">
-<meta property="og:title" content="${escapeHtml(title)}">
-<meta property="og:description" content="${escapeHtml(description)}">
-<meta property="og:locale" content="${langTag.replace('-', '_')}">
-${canonical ? `<meta property="og:url" content="${canonical}">` : ''}
-${baseUrl ? `<meta property="og:image" content="${baseUrl}/${rawLang}/assets/cover.png">\n<meta name="twitter:card" content="summary_large_image">` : ''}
 <link rel="icon" href="${FAVICON}">
 ${fontsAndCss.preload.map((f) => `<link rel="preload" href="${f}" as="font" type="font/woff2" crossorigin>`).join('\n')}
 <link rel="stylesheet" href="assets/site.css">
 <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
-${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>` : ''}
 </head>
 <body>
 <a class="skip-link" href="#content">${escapeHtml(ui.skip)}</a>
@@ -350,7 +331,8 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
 ${isIndex ? '' : `<button class="hbtn menu-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="${escapeHtml(ui.menu)}" data-needs-js>${ICON.menu}</button>`}
 <a class="brand" href="index.html" title="${escapeHtml(ui.home)}">${escapeHtml(meta.title)}</a>
 <button class="hbtn search-btn" type="button" aria-label="${escapeHtml(ui.search)}" data-needs-js>${ICON.search}<span>${escapeHtml(ui.search)}</span><kbd>/</kbd></button>
-${alts.map((a) => `<a class="hbtn" hreflang="${a.langTag}" lang="${a.langTag}" href="../${a.lang}/${a.file}">${escapeHtml(a.name)}</a>`).join('')}
+${alts.map((a) => `<a class="hbtn" lang="${a.langTag}" href="../${a.lang}/${a.file}">${escapeHtml(a.name)}</a>`).join('')}
+${downloadUrl ? `<a class="hbtn download-btn" rel="noopener" href="${escapeHtml(downloadUrl)}">${ICON.download}<span>${escapeHtml(ui.download)}</span></a>` : ''}
 <button class="hbtn theme-btn" type="button" aria-label="${escapeHtml(ui.theme)}" data-needs-js>${ICON.sun}${ICON.moon}</button>
 </header>
 <div class="scrim"></div>
@@ -388,7 +370,7 @@ function indexBody() {
 <h1>${escapeHtml(meta.title)}</h1>
 <p class="subtitle">${escapeHtml(meta.subtitle)}</p>
 <p class="desc">${escapeHtml(meta.description)}</p>
-<a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>
+<p class="actions"><a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>${downloadUrl ? `<a class="cta alt" rel="noopener" href="${escapeHtml(downloadUrl)}">${escapeHtml(ui.download)}</a>` : ''}</p>
 </div>
 </section>
 <div class="index-toc" data-pagefind-ignore>${tocHtml(null, 'toc')}</div>
@@ -422,10 +404,6 @@ writeFileSync(resolve(OUT, 'index.html'),
   pageHtml({ page: null, eyebrow: '', h1: '', body: indexBody(), headings: [], description: meta.description, isIndex: true }));
 written.unshift('index.html');
 
-if (baseUrl) {
-  const urls = written.map((f) => `  <url><loc>${absUrl(f)}</loc></url>`).join('\n');
-  writeFileSync(resolve(OUT, 'sitemap.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
-}
+writeFileSync(resolve(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
 
 console.log(`✅ Built: ${OUT.replace(PROJECT_ROOT + '/', '')}/  (${written.length} pages)`);

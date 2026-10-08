@@ -63,8 +63,9 @@ produces:
 - **EPUB 3** — reflowable, conservative CSS, working navigation, MathML.
 - **HTML site** — a static, multi-page edition (one page per chapter) you can
   host anywhere: inline SVG diagrams, build-time syntax highlighting, light/dark
-  theme, full-text search ([Pagefind](https://pagefind.app)), language switcher,
-  SEO metadata. Checked against the source by `verify-html.mjs`.
+  theme, full-text search ([Pagefind](https://pagefind.app)), language switcher.
+  Built for reading, not indexing (`noindex` + `robots.txt`). Checked against the
+  source by `verify-html.mjs`, and zipped for offline use.
 - **Cover** — a KDP-compatible PNG rendered by Typst from your config strings.
 
 The engine is consumed as a **git submodule**: every book inherits the same
@@ -175,7 +176,7 @@ language (`languages.pt`, `languages.en`, …):
 | `description`, `langTag` | EPUB metadata + HTML `<meta>` |
 | `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
-| top-level `html.baseUrl` (optional) | absolute URL of the folder holding `<lang>/`: enables canonical, hreflang, og:image, `sitemap.xml` |
+| top-level `html.downloadUrl` (optional) | where readers get the PDF/EPUB: adds a "Download" link to the site header and landing page |
 | top-level `html.chapters` (optional) | e.g. `[1, 2, "A"]`: publish only these chapters/appendices (a free preview); the rest stay listed, greyed out |
 | `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
 

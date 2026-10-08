@@ -7,7 +7,7 @@ const UI = {
     contents: 'Contents', onThisPage: 'On this page', next: 'Next', prev: 'Previous',
     search: 'Search', menu: 'Menu', theme: 'Toggle light/dark theme', skip: 'Skip to content',
     copy: 'copy', copied: 'copied', copyFailed: 'failed', expand: 'expand', close: 'close',
-    startReading: 'Start reading', copyright: 'Copyright', anchor: 'Link to this section',
+    startReading: 'Start reading', download: 'Download PDF/EPUB', copyright: 'Copyright', anchor: 'Link to this section',
     notIncluded: 'Not in this edition. Available in the PDF and EPUB.', home: 'Book home',
     pagefind: {
       placeholder: 'Search the book', clear_search: 'Clear', load_more: 'Load more results',
@@ -22,7 +22,7 @@ const UI = {
     contents: 'Sumário', onThisPage: 'Nesta página', next: 'Próximo', prev: 'Anterior',
     search: 'Buscar', menu: 'Menu', theme: 'Alternar tema claro/escuro', skip: 'Ir para o conteúdo',
     copy: 'copiar', copied: 'copiado', copyFailed: 'falhou', expand: 'ampliar', close: 'fechar',
-    startReading: 'Começar a ler', copyright: 'Direitos autorais', anchor: 'Link para esta seção',
+    startReading: 'Começar a ler', download: 'Baixar PDF/EPUB', copyright: 'Direitos autorais', anchor: 'Link para esta seção',
     notIncluded: 'Fora desta edição. Disponível no PDF e no EPUB.', home: 'Início do livro',
     pagefind: {
       placeholder: 'Buscar no livro', clear_search: 'Limpar', load_more: 'Mais resultados',
@@ -39,7 +39,7 @@ UI.es = {
   contents: 'Contenido', onThisPage: 'En esta página', next: 'Siguiente', prev: 'Anterior',
   search: 'Buscar', theme: 'Cambiar tema claro/oscuro', skip: 'Ir al contenido',
   copy: 'copiar', copied: 'copiado', copyFailed: 'falló', expand: 'ampliar', close: 'cerrar',
-  startReading: 'Empezar a leer', copyright: 'Derechos de autor', anchor: 'Enlace a esta sección',
+  startReading: 'Empezar a leer', download: 'Descargar PDF/EPUB', copyright: 'Derechos de autor', anchor: 'Enlace a esta sección',
   notIncluded: 'Fuera de esta edición. Disponible en el PDF y el EPUB.', home: 'Inicio del libro',
   pagefind: {
     ...UI.pt.pagefind,

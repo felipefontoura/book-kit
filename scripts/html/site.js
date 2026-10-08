@@ -83,7 +83,9 @@
 
   // ── Search (Pagefind, built after the pages) ─────────────────────
   const sbtn = $('.search-btn');
-  if (sbtn) {
+  // Pagefind fetches its index, which browsers block on file:// (e.g. the downloaded zip).
+  if (sbtn && location.protocol === 'file:') sbtn.hidden = true;
+  else if (sbtn) {
     let dlg;
     const open = async () => {
       if (!dlg) {
