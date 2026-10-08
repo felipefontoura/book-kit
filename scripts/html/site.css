@@ -17,9 +17,9 @@
   --accent-text: #8C6210;     /* amber that passes AA as text on paper */
   --accent-soft: #FCEAC5;
   --paper: #FBF8F2;           /* diagrams are always drawn on paper */
-  --btn-bg: #14120F;          /* primary button: ink on paper, like the cover */
-  --btn-fg: #FBF8F2;
-  --btn-hover: #3A3329;
+  --btn-bg: #E8B03C;          /* primary button: a bright amber that sits well on paper */
+  --btn-fg: #1A1206;
+  --btn-hover: #F2C257;
 
   --shiki-foreground: #1A1206;
   --shiki-background: #F0EAE0;
@@ -409,7 +409,7 @@ dialog.zoom .zoom-close { position: sticky; float: right; top: .4rem; margin: .4
 .hero h1 { margin-bottom: .75rem; }
 .hero .subtitle { font-family: var(--serif); font-size: 1.4rem; line-height: 1.3; color: var(--heading); margin: 0 0 1rem; }
 .hero .desc { color: var(--text-muted); max-width: 38rem; }
-.hero .cta { display: inline-block; margin-top: .75rem; padding: .7rem 1.3rem; background: var(--btn-bg); color: var(--btn-fg); border-radius: 6px; font-weight: 600; text-decoration: none; }
+.hero .cta { display: inline-block; margin-top: .75rem; padding: .7rem 1.3rem; background: var(--btn-bg); color: var(--btn-fg); border-radius: 6px; font-weight: 600; text-decoration: none; box-shadow: inset 0 0 0 1px rgb(140 98 16 / .5); }
 .hero .cta:hover { background: var(--btn-hover); }
 .index-toc .toc-group { margin-top: 2rem; }
 .index-toc li a { font-size: 1rem; padding: .45rem .5rem .45rem .75rem; }
