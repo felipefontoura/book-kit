@@ -61,6 +61,10 @@ const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => Strin
 
 const OUT = resolve(PROJECT_ROOT, 'dist/html', rawLang);
 const COVER = resolve(PROJECT_ROOT, `dist/cover-${rawLang}.png`);
+// Cover file name carries its content hash (long-cacheable); '' when there is no cover.
+const coverName = existsSync(COVER)
+  ? `cover.${createHash('sha1').update(readFileSync(COVER)).digest('hex').slice(0, 8)}.png`
+  : '';
 
 // ─── Page plan (names + order), reusable for the other languages ────
 function planPages(mdPath, rawSrc) {
@@ -378,7 +382,7 @@ function indexBody() {
   const first = flow[0];
   return `<div class="page landing">
 <section class="hero">
-${existsSync(COVER) ? `<img src="assets/cover.png" width="1600" height="2560" alt="${escapeHtml(meta.title)}">` : ''}
+${coverName ? `<img src="assets/${coverName}" width="1600" height="2560" alt="${escapeHtml(meta.title)}">` : ''}
 <div>
 <p class="eyebrow">${escapeHtml(meta.eyebrow ?? '')}</p>
 <h1>${escapeHtml(meta.title)}</h1>
@@ -408,7 +412,7 @@ fontsAndCss.cssV = hash(cssText);
 fontsAndCss.jsV = hash(jsText);
 writeFileSync(resolve(OUT, 'assets/site.css'), cssText);
 writeFileSync(resolve(OUT, 'assets/site.js'), jsText);
-if (existsSync(COVER)) copyFileSync(COVER, resolve(OUT, 'assets/cover.png'));
+if (coverName) copyFileSync(COVER, resolve(OUT, 'assets', coverName));
 else console.warn(`⚠ Cover not found (${COVER}); the landing page will have no image.`);
 console.log(`▸ Fonts: ${(fonts.bytes / 1024).toFixed(0)} KB woff2 (subset).`);
 

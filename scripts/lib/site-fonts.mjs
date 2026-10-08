@@ -6,6 +6,7 @@
 // in Kalam, so the page must ship it or the diagrams fall back to a system face.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import subsetFont from 'subset-font';
 import { KIT_ROOT } from './config.mjs';
@@ -46,7 +47,10 @@ export async function buildSiteFonts({ text, outDir }) {
   for (const f of FACES) {
     const src = readFileSync(resolve(KIT_ROOT, 'typst/assets/fonts', `${f.file}.ttf`));
     const woff2 = await subsetFont(src, chars, { targetFormat: 'woff2' });
-    const name = `${f.file}.woff2`;
+    // The content hash is in the name, so a host can cache the file for a year:
+    // a changed font is a new URL (and the stylesheet that names it is versioned too).
+    const hash = createHash('sha1').update(woff2).digest('hex').slice(0, 8);
+    const name = `${f.file}.${hash}.woff2`;
     writeFileSync(resolve(dir, name), woff2);
     bytes += woff2.length;
     css.push(
