@@ -129,11 +129,11 @@ export function baseLangFromFilename(path) {
 // Words the generated output uses when re-emitting headings. The source
 // headings are matched in every language by the RE_* patterns above.
 const LABELS = {
-  en: { chapter: 'Chapter',  part: 'Part',  appendix: 'Appendix', appendixSlug: 'appendix',
+  en: { chapter: 'Chapter',  part: 'Part',  appendix: 'Appendix', appendixSlug: 'appendix', diagram: 'Diagram',
         appendices: ['Appendices', 'Exercises, Templates & Resources'] },
-  pt: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apêndice', appendixSlug: 'apendice',
+  pt: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apêndice', appendixSlug: 'apendice', diagram: 'Diagrama',
         appendices: ['Apêndices', 'Exercícios, Templates & Recursos'] },
-  es: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apéndice', appendixSlug: 'apendice',
+  es: { chapter: 'Capítulo', part: 'Parte', appendix: 'Apéndice', appendixSlug: 'apendice', diagram: 'Diagrama',
         appendices: ['Apéndices', 'Ejercicios, Plantillas y Recursos'] },
 };
 

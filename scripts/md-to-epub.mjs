@@ -3,53 +3,30 @@
 // splitter and marked.parse() for HTML rendering. Mermaid blocks are
 // substituted with <figure><img> tags pointing at the pre-rendered SVGs.
 //
+// Source resolution, metadata, Markdown clean-up and math live in
+// lib/prepare.mjs, shared with md-to-html.mjs so both formats stay in sync.
+//
 // Cover: expects dist/cover-${lang}.png (rendered separately from
 // typst/cover.typ via build.sh).
 //
 // Source of truth: BOOK.{pt-BR,en,es}.md. Re-run after every MD edit.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { dirname, resolve, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Marked } from 'marked';
-import katex from 'katex';
+import { resolve } from 'node:path';
 import { EPub } from '@lesjoursfr/html-to-epub';
-import { splitSections, baseLangFromFilename, langFromFilename, frontmatterFiles } from './lib/chapter-splitter.mjs';
-import { mathExtensions } from './lib/math.mjs';
+import { langFromFilename, frontmatterFiles, labelsFor } from './lib/chapter-splitter.mjs';
 import { fixEpubMathml } from './lib/epub-mathml-fix.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
+import {
+  resolveSource, loadMeta, loadDiagramManifest, prepareMarkdown, stripTitleBlock,
+  escapeHtml, makeMarked, buildSections, promoteHeading,
+} from './lib/prepare.mjs';
 
-// ─── Source resolution ──────────────────────────────────────────────
-const candidates = [process.env.SOURCE_MD, 'BOOK.pt-BR.md', 'BOOK.en.md'].filter(Boolean);
-let MD = null;
-for (const c of candidates) {
-  const p = resolve(PROJECT_ROOT,c);
-  if (existsSync(p)) { MD = p; break; }
-}
-if (!MD) {
-  console.error('No source Markdown file found.');
-  process.exit(1);
-}
+// ─── Source + metadata (book.config.json — single source of truth) ───
+const { path: MD, baseLang, rawLang } = resolveSource();
 console.log(`▸ Source: ${MD.replace(PROJECT_ROOT + '/', '')}`);
-
-const baseLang = baseLangFromFilename(MD);
-const rawLang = (langFromFilename(MD) ?? baseLang).toLowerCase();
-
-// ─── Metadata (from book.config.json — single source of truth) ───────
-const cfg = JSON.parse(readFileSync(resolve(PROJECT_ROOT,'book.config.json'), 'utf8'));
-const L = cfg.languages[baseLang];
-const langTag = L.langTag;
-const meta = {
-  title: L.title,
-  subtitle: L.subtitle,
-  author: cfg.author,
-  publisher: cfg.publisher,
-  tocTitle: L.tocName,
-  preambleTitle: L.preambleTitle,
-  partsLabel: L.partsLabel,
-  appendixLabel: L.appendixLabel,
-  description: L.description,
-};
+const { langTag, meta } = loadMeta(baseLang);
+const labels = labelsFor(MD);
 
 // ─── Cover ──────────────────────────────────────────────────────────
 const COVER = resolve(PROJECT_ROOT,`dist/cover-${rawLang}.png`);
@@ -59,109 +36,50 @@ if (!existsSync(COVER)) {
   process.exit(1);
 }
 
-// ─── Mermaid manifest (pre-rendered SVGs) ───────────────────────────
-const MANIFEST_PATH = resolve(PROJECT_ROOT,'typst/assets/diagrams/manifest.json');
-let diagramManifest = [];
-if (existsSync(MANIFEST_PATH)) {
-  diagramManifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
-}
-
 // ─── Load + clean source ────────────────────────────────────────────
-let src = readFileSync(MD, 'utf8');
-
-// Strip Obsidian wikilinks.
-src = src.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
-         .replace(/\[\[([^\]]+)\]\]/g, (_, slug) => slug.replace(/-/g, ' '));
-
-// Replace ```mermaid blocks with raw HTML <figure><img>. Marked will pass
-// raw block HTML through to the output untouched.
-let mermaidCursor = 0;
-src = src.replace(/```mermaid[ \t]*\r?\n[\s\S]*?\r?\n```/g, () => {
-  mermaidCursor++;
-  const entry = diagramManifest[mermaidCursor - 1];
-  if (!entry) {
-    return `<p><em>[Missing diagram #${mermaidCursor}]</em></p>`;
-  }
-  const absPath = resolve(PROJECT_ROOT,'typst', entry.file);
-  return `<figure><img src="${absPath}" alt="Diagrama ${mermaidCursor}" /></figure>`;
+const { src, diagrams } = prepareMarkdown(readFileSync(MD, 'utf8'), {
+  manifest: loadDiagramManifest(),
+  figure: (entry, n) => {
+    const absPath = resolve(PROJECT_ROOT, 'typst', entry.file);
+    return `<figure><img src="${absPath}" alt="${labels.diagram} ${n}" /></figure>`;
+  },
+  missing: (n) => `<p><em>[Missing diagram #${n}]</em></p>`,
 });
-console.log(`▸ Substituted ${mermaidCursor} Mermaid blocks.`);
+console.log(`▸ Substituted ${diagrams} Mermaid blocks.`);
 
 // ─── Split and render each section to HTML ───────────────────────────
-const sections = splitSections(src);
-const marked = new Marked({ gfm: true, breaks: false });
-
-// Math → KaTeX MathML (output: 'mathml' needs no CSS/fonts and is EPUB 3
-// native). Display equations get a centring wrapper; inline stays in flow.
-const katexMathml = (tex, displayMode) =>
-  katex.renderToString(tex, { displayMode, throwOnError: false, output: 'mathml' });
-marked.use({ extensions: mathExtensions({
-  block:  (t) => `<div class="equation">${katexMathml(t.text, true)}</div>`,
-  inline: (t) => katexMathml(t.text, false),
-}) });
+const sections = buildSections(src, { baseLang, meta, path: MD });
+const marked = makeMarked();
 
 const content = [];
 
 for (const s of sections) {
   if (s.kind === 'frontmatter') {
-    // Drop the leading title block (H1 title + H2 subtitle + H3 tagline +
-    // optional `---` separator). EPUB cover/title metadata already shows
-    // title + subtitle; repeating them would duplicate entries in the
-    // reader's navigation.
-    let text = s.sourceText;
-    const beforeHr = text.match(/^([\s\S]*?)(\r?\n---\r?\n)/);
-    if (beforeHr) {
-      text = text.slice(beforeHr[0].length);
-    } else {
-      text = text.replace(/^#\s+[^\n]+\n+/, '');
-    }
-    const html = marked.parse(text);
+    const html = marked.parse(stripTitleBlock(s.sourceText));
     if (html.trim()) {
-      content.push({
-        title: meta.preambleTitle,
-        data: `<div>${html}</div>`,
-      });
+      content.push({ title: s.displayTitle, data: `<div>${html}</div>` });
     }
     continue;
   }
 
   if (s.kind === 'part') {
-    const m = s.title.match(/^(?:PART|PARTE)\s+([IVX]+)\s*[:—-]\s*(.+)$/i);
-    const num = m ? m[1] : '';
-    const name = m ? m[2].trim() : s.title;
     content.push({
-      title: `${meta.partsLabel} ${num}: ${name}`,
+      title: s.displayTitle,
       data: `<div class="part-divider">
-        <p class="label">${meta.partsLabel} ${num}</p>
-        <h1 class="name">${escapeHtml(name)}</h1>
+        <p class="label">${meta.partsLabel} ${s.num}</p>
+        <h1 class="name">${escapeHtml(s.name)}</h1>
       </div>`,
     });
     continue;
   }
 
-  if (s.kind === 'chapter') {
-    const promoted = s.sourceText.replace(/^##\s+/, '# ');
-    const html = marked.parse(promoted);
+  if (s.kind === 'chapter' || s.kind === 'appendix') {
     content.push({
-      title: `Cap. ${s.number}: ${s.title}`,
-      data: `<div>${html}</div>`,
+      title: s.displayTitle,
+      data: `<div>${marked.parse(promoteHeading(s.sourceText))}</div>`,
     });
     continue;
   }
-
-  if (s.kind === 'appendix') {
-    const promoted = s.sourceText.replace(/^##\s+/, '# ');
-    const html = marked.parse(promoted);
-    content.push({
-      title: `${meta.appendixLabel} ${s.letter}: ${s.title}`,
-      data: `<div>${html}</div>`,
-    });
-    continue;
-  }
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ─── Front matter (optional MD pages) ────────────────────────────────

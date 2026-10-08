@@ -25,6 +25,9 @@
     "archiver": "^7.0.1",
     "katex": "^0.16.47",
     "marked": "^15.0.7",
+    "pagefind": "^1.5.2",
+    "shiki": "^4.5.0",
+    "subset-font": "^2.9.0",
     "yauzl": "^2.10.0"
   }
 }

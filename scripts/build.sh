@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full build pipeline: Markdown source → Mermaid SVGs → Typst chapters → PDF + EPUB.
+# Full build pipeline: Markdown source → Mermaid SVGs → PDF (Typst) + EPUB + HTML site.
 #
 # Two roots keep the engine portable (single-repo, or shared as a git submodule):
 #   KIT_ROOT     — this script's engine: scripts/, typst/{template,cover,worksheet}.typ,
@@ -14,7 +14,7 @@
 #   2. BOOK.pt-BR.md  (Brazilian Portuguese — primary)
 #   3. BOOK.en.md     (English — fallback)
 #
-# Targets: --pdf | --epub | --all (default)
+# Targets: --pdf | --epub | --html | --all (default: all three)
 
 set -euo pipefail
 
@@ -27,9 +27,10 @@ target="all"
 case "${1:-}" in
   --pdf)  target="pdf" ;;
   --epub) target="epub" ;;
+  --html) target="html" ;;
   --all|"") target="all" ;;
   *)
-    echo "Unknown target: $1 (use --pdf, --epub, or --all)" >&2
+    echo "Unknown target: $1 (use --pdf, --epub, --html, or --all)" >&2
     exit 2
     ;;
 esac
@@ -58,6 +59,7 @@ mkdir -p "$DIST"
 PDF="$DIST/book-$lang.pdf"
 EPUB="$DIST/book-$lang.epub"
 COVER="$DIST/cover-$lang.png"
+HTML="$DIST/html/$lang"
 
 # Metadata for cover renderer — read from book.config.json (single source of
 # truth). CFG_LANG is the base language key (pt-br → pt).
@@ -102,7 +104,8 @@ if [[ "$target" == "pdf" || "$target" == "all" ]]; then
   echo "   PDF: $PDF ($(du -h "$PDF" | cut -f1))"
 fi
 
-if [[ "$target" == "epub" || "$target" == "all" ]]; then
+# The cover feeds both the EPUB and the HTML landing page.
+if [[ "$target" == "epub" || "$target" == "html" || "$target" == "all" ]]; then
   echo "▸ Rendering cover (Typst → PNG)..."
   typst compile --font-path "$FONTS" "$KIT_ROOT/typst/cover.typ" "$COVER" \
     --ppi 250 --format png \
@@ -111,10 +114,22 @@ if [[ "$target" == "epub" || "$target" == "all" ]]; then
     --input author="$COVER_AUTHOR" \
     --input label="$COVER_LABEL"
   echo "   Cover: $COVER ($(du -h "$COVER" | cut -f1))"
+fi
 
+if [[ "$target" == "epub" || "$target" == "all" ]]; then
   echo "▸ Building EPUB..."
   node "$KIT_ROOT/scripts/md-to-epub.mjs"
   echo "   EPUB: $EPUB ($(du -h "$EPUB" | cut -f1))"
+fi
+
+if [[ "$target" == "html" || "$target" == "all" ]]; then
+  echo "▸ Building HTML site..."
+  node "$KIT_ROOT/scripts/md-to-html.mjs"
+  echo "▸ Indexing for search (Pagefind)..."
+  "$KIT_ROOT/node_modules/.bin/pagefind" --site "$HTML" --quiet
+  echo "▸ Verifying HTML against the source..."
+  node "$KIT_ROOT/scripts/verify-html.mjs"
+  echo "   HTML: $HTML ($(du -sh "$HTML" | cut -f1))"
 fi
 
 echo ""
