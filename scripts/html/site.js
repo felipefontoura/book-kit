@@ -16,6 +16,13 @@
     try { localStorage.setItem('theme', next); } catch {}
   });
 
+  // ── Download menu: close on outside click / Escape ───────────────
+  const dl = $('.dl-menu');
+  if (dl) {
+    addEventListener('click', (e) => { if (!dl.contains(e.target)) dl.open = false; });
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') dl.open = false; });
+  }
+
   // ── Mobile nav drawer ────────────────────────────────────────────
   const menu = $('.menu-btn');
   const setNav = (open) => {

@@ -15,8 +15,9 @@
 // Optional `html` block in book.config.json:
 //   chapters     e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
 //                preview); the rest stay listed in the contents, greyed out
-//   downloadUrl  where readers get the PDF/EPUB ({lang} is replaced by pt-br | en); adds a
-//                "Download" link to the header and the landing page
+//   downloads    [{ "kind": "pdf" | "epub" | "zip", "url": "https://…/{lang}/pdf" }] direct
+//                download links ({lang} becomes pt-br | en): a menu in the header and
+//                buttons on the landing page
 //
 // The site is deliberately not tuned for search engines: every page carries
 // noindex/nofollow and robots.txt disallows everything. (Full-text search for
@@ -45,7 +46,12 @@ const { cfg, L, langTag, meta } = loadMeta(baseLang);
 const labels = labelsFor(MD);
 const ui = uiFor(baseLang, L.ui);
 const htmlCfg = cfg.html ?? {};
-const downloadUrl = (htmlCfg.downloadUrl || '').replaceAll('{lang}', rawLang);   // {lang} → pt-br | en
+// Direct download links ({lang} → pt-br | en): [{ kind: "pdf" | "epub" | "zip", url }].
+const downloads = (htmlCfg.downloads || []).map((d) => ({
+  kind: d.kind,
+  url: String(d.url).replaceAll('{lang}', rawLang),
+  label: d.kind === 'zip' ? ui.downloadZip : d.kind.toUpperCase(),
+}));
 const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => String(c).toUpperCase()) : null;
 
 const OUT = resolve(PROJECT_ROOT, 'dist/html', rawLang);
@@ -333,7 +339,7 @@ ${isIndex ? '' : `<button class="hbtn menu-btn" type="button" aria-controls="sid
 <a class="brand" href="index.html" title="${escapeHtml(ui.home)}">${escapeHtml(meta.title)}</a>
 <button class="hbtn search-btn" type="button" aria-label="${escapeHtml(ui.search)}" data-needs-js>${ICON.search}<span>${escapeHtml(ui.search)}</span><kbd>/</kbd></button>
 ${alts.map((a) => `<a class="hbtn" lang="${a.langTag}" href="../${a.lang}/${a.file}">${escapeHtml(a.name)}</a>`).join('')}
-${downloadUrl ? `<a class="hbtn download-btn" rel="noopener" href="${escapeHtml(downloadUrl)}">${ICON.download}<span>${escapeHtml(ui.download)}</span></a>` : ''}
+${downloads.length ? `<details class="dl-menu"><summary class="hbtn download-btn" aria-label="${escapeHtml(ui.download)}">${ICON.download}<span>${escapeHtml(ui.download)}</span></summary><div class="dl-pop">${downloads.map((d) => `<a rel="noopener" href="${escapeHtml(d.url)}" download>${escapeHtml(d.label)}</a>`).join('')}</div></details>` : ''}
 <button class="hbtn theme-btn" type="button" aria-label="${escapeHtml(ui.theme)}" data-needs-js>${ICON.sun}${ICON.moon}</button>
 </header>
 <div class="scrim"></div>
@@ -371,7 +377,7 @@ function indexBody() {
 <h1>${escapeHtml(meta.title)}</h1>
 <p class="subtitle">${escapeHtml(meta.subtitle)}</p>
 <p class="desc">${escapeHtml(meta.description)}</p>
-<p class="actions"><a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>${downloadUrl ? `<a class="cta alt" rel="noopener" href="${escapeHtml(downloadUrl)}">${escapeHtml(ui.download)}</a>` : ''}</p>
+<p class="actions"><a class="cta" href="${first.file}">${escapeHtml(ui.startReading)}</a>${downloads.map((d) => `<a class="cta alt" rel="noopener" href="${escapeHtml(d.url)}" download>${ICON.download}${escapeHtml(d.label)}</a>`).join('')}</p>
 </div>
 </section>
 <div class="index-toc" data-pagefind-ignore>${tocHtml(null, 'toc')}</div>
