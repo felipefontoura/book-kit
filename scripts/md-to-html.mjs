@@ -153,7 +153,7 @@ const renderCode = await createCodeRenderer(rawSource);
 
 // Per-page render context: heading ids are unique within a page, and the
 // "on this page" list is collected while rendering.
-let ctx = { ids: new Set(), headings: [], shift: 0 };
+let ctx = { ids: new Set(), headings: [], shift: 0 };   // body headings never go above <h2>: the page's own <h1> is written separately
 const stripTags = (h) => h.replace(/<[^>]+>/g, '');
 const unescapeHtml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 
@@ -161,7 +161,7 @@ const marked = makeMarked({
   renderer: {
     heading({ tokens, depth }) {
       const inner = this.parser.parseInline(tokens);
-      const level = Math.min(6, Math.max(1, depth - ctx.shift));
+      const level = Math.min(6, Math.max(2, depth - ctx.shift));
       let id = slugify(unescapeHtml(stripTags(inner))) || 'section';
       for (let i = 2; ctx.ids.has(id); i++) id = `${id.replace(/-\d+$/, '')}-${i}`;
       ctx.ids.add(id);
@@ -211,8 +211,10 @@ function renderBody(page) {
     // The source marks this heading with a bold line; the page H1 replaces it.
     md = md.replace(/^\s*\*\*([^*\n]+)\*\*\s*\n/, (m, t) => (t.trim().toLowerCase() === meta.preambleTitle.toLowerCase() ? '' : m));
   } else if (page.kind === 'front') {
-    h1 = escapeHtml(page.title);
-    md = page.md;
+    // A front-matter page may open with its own "# Title": that is the page's <h1>.
+    const own = page.md.match(/^\s*#\s+([^\n]+)\n/);
+    h1 = own ? marked.parseInline(own[1]) : escapeHtml(page.title);
+    md = own ? page.md.slice(own[0].length) : page.md;
   } else if (page.kind === 'chapter' || page.kind === 'appendix') {
     eyebrow = page.label;
     h1 = marked.parseInline(page.name);
@@ -376,7 +378,7 @@ function indexBody() {
   const first = flow[0];
   return `<div class="page landing">
 <section class="hero">
-<img src="assets/cover.png" width="1600" height="2560" alt="${escapeHtml(meta.title)}">
+${existsSync(COVER) ? `<img src="assets/cover.png" width="1600" height="2560" alt="${escapeHtml(meta.title)}">` : ''}
 <div>
 <p class="eyebrow">${escapeHtml(meta.eyebrow ?? '')}</p>
 <h1>${escapeHtml(meta.title)}</h1>
