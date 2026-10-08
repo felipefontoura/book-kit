@@ -125,7 +125,8 @@ export function buildSections(src, { baseLang, meta, path }) {
       return { ...s, num, name, displayTitle: `${meta.partsLabel} ${num}: ${name}` };
     }
     if (s.kind === 'chapter') {
-      return { ...s, displayTitle: `${labels.chapter} ${s.number}: ${s.title}` };
+      // `shortTitle` keeps the compact form the EPUB navigation has always used.
+      return { ...s, displayTitle: `${labels.chapter} ${s.number}: ${s.title}`, shortTitle: `${labels.chapterShort} ${s.number}: ${s.title}` };
     }
     if (s.kind === 'appendix') {
       return { ...s, displayTitle: `${meta.appendixLabel} ${s.letter}: ${s.title}` };

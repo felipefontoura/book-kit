@@ -75,7 +75,7 @@ for (const s of sections) {
 
   if (s.kind === 'chapter' || s.kind === 'appendix') {
     content.push({
-      title: s.displayTitle,
+      title: s.shortTitle ?? s.displayTitle,
       data: `<div>${marked.parse(promoteHeading(s.sourceText))}</div>`,
     });
     continue;

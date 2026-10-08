@@ -14,7 +14,7 @@
 //
 // Optional `html` block in book.config.json:
 //   baseUrl   absolute URL of the folder that holds <lang>/ — enables canonical,
-//             hreflang, og:image and sitemap.xml
+//             hreflang, og:image and sitemap.xml ($HTML_BASE_URL overrides it)
 //   chapters  e.g. [1, 2, "A"] — publish only these chapters/appendices (a free
 //             preview); the rest stay listed in the contents, greyed out
 
@@ -40,7 +40,8 @@ const { cfg, L, langTag, meta } = loadMeta(baseLang);
 const labels = labelsFor(MD);
 const ui = uiFor(baseLang, L.ui);
 const htmlCfg = cfg.html ?? {};
-const baseUrl = (htmlCfg.baseUrl || '').replace(/\/+$/, '');
+// HTML_BASE_URL (set by CI, which owns where the site is hosted) wins over the config.
+const baseUrl = (process.env.HTML_BASE_URL || htmlCfg.baseUrl || '').replace(/\/+$/, '');
 const only = Array.isArray(htmlCfg.chapters) ? htmlCfg.chapters.map((c) => String(c).toUpperCase()) : null;
 
 const OUT = resolve(PROJECT_ROOT, 'dist/html', rawLang);
@@ -168,7 +169,7 @@ function inlineSvg(n) {
   svg = svg
     .replace(/role="[^"]*"/, `role="img" aria-label="${escapeHtml(labels.diagram)} ${n}" focusable="false"`)
     .replace(/style="[^"]*"/, `style="max-width: ${w}px; --nat: ${w}px; --min: ${min}px;"`);
-  return `<figure class="diagram">${svg}</figure>`;
+  return `<figure class="diagram" style="--nat: ${w}px">${svg}</figure>`;
 }
 
 function finishHtml(html) {
