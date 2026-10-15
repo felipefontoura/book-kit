@@ -23,13 +23,27 @@
 // ─── Copyright page (front matter) ──────────────────────────────────
 // A bold title + subtitle header, then each paragraph from the config's
 // copyright array, spaced apart. Authorship/rights come from the config.
+// A paragraph may hold Markdown links, `[text](url)`: the reader sees the
+// text, the link carries the full URL (UTMs and all).
+#let with-links(s) = {
+  let out = ()
+  let pos = 0
+  for m in s.matches(regex("\\[([^\\]]+)\\]\\(([^)]+)\\)")) {
+    out.push([#s.slice(pos, m.start)])
+    out.push(link(m.captures.at(1), m.captures.at(0)))
+    pos = m.end
+  }
+  out.push([#s.slice(pos)])
+  out.join()
+}
+
 #let copyright-body = [
   #strong(L.title) \
   #L.subtitle
 
   #v(1em)
   #for p in L.copyright [
-    #p
+    #with-links(p)
 
     #v(0.6em)
   ]
@@ -106,3 +120,7 @@
 // repo or a submodule. It lists every chapter in reading order, with part
 // dividers between Part I / II / III / Appendices.
 #include "/typst/chapters.typ"
+
+// Optional back-matter pages (an "About the author"…), generated from
+// backmatter/*.md after the last appendix; listed in the TOC.
+#include "/typst/backmatter.typ"
