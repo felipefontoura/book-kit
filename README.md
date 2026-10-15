@@ -285,6 +285,21 @@ frontmatter/
 Each becomes its own unnumbered, header-less page between the copyright page
 and the TOC, never listed in the TOC.
 
+Back-matter pages (an "About the author", a colophon) follow the same
+convention in `backmatter/`, but are real pages of the book: they come after
+the last appendix, a page's own `# Title` opens it on a recto, and it is listed
+in the PDF, EPUB and HTML contents.
+
+```text
+backmatter/
+  01-about-the-author.en.md
+  01-sobre-o-autor.pt-BR.md
+  author.jpg              # ![Author](author.jpg "42%") — path relative to the .md, title = width
+```
+
+Images in any Markdown (source or matter pages) are local paths relative to the
+file that holds them, as on GitHub; a title that is a percentage sets the width.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Architecture
