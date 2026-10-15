@@ -15,6 +15,11 @@
 #   3. BOOK.en.md     (English — fallback)
 #
 # Targets: --pdf | --epub | --html | --all (default: all three)
+#          --print  KDP print files: the interior without the screen paper tint
+#                   (book-<lang>-print.pdf, padded to an even page count) and the
+#                   full-wrap covers sized by that page count
+#                   (cover-<lang>-paperback.pdf, cover-<lang>-hardcover.pdf).
+#                   Not part of --all: print files are uploaded by hand.
 
 set -euo pipefail
 
@@ -28,9 +33,10 @@ case "${1:-}" in
   --pdf)  target="pdf" ;;
   --epub) target="epub" ;;
   --html) target="html" ;;
+  --print) target="print" ;;
   --all|"") target="all" ;;
   *)
-    echo "Unknown target: $1 (use --pdf, --epub, --html, or --all)" >&2
+    echo "Unknown target: $1 (use --pdf, --epub, --html, --print, or --all)" >&2
     exit 2
     ;;
 esac
@@ -61,6 +67,7 @@ EPUB="$DIST/book-$lang.epub"
 COVER="$DIST/cover-$lang.png"
 HTML="$DIST/html/$lang"
 HTML_ZIP="$DIST/book-$lang-html.zip"
+PRINT_PDF="$DIST/book-$lang-print.pdf"
 
 # Metadata for cover renderer — read from book.config.json (single source of
 # truth). CFG_LANG is the base language key (pt-br → pt).
@@ -72,6 +79,10 @@ COVER_TITLE="$(cfg_lang cover.title)"
 COVER_SUBTITLE="$(cfg_lang cover.subtitle)"
 COVER_LABEL="$(cfg_lang cover.label)"
 COVER_AUTHOR="$(cfg_root author)"
+# Optional monogram before the cover label (off unless cover.monogram is set).
+COVER_MONOGRAM="$(node -e 'process.stdout.write(String(require(process.argv[1]).languages[process.argv[2]].cover.monogram??""))' "$CFG" "$CFG_LANG")"
+# Optional part of the cover title set in amber italic.
+COVER_ACCENT="$(node -e 'process.stdout.write(String(require(process.argv[1]).languages[process.argv[2]].cover.accent??""))' "$CFG" "$CFG_LANG")"
 
 # ─── Tools (installed in the kit) ────────────────────────────────────
 if ! command -v typst >/dev/null 2>&1; then
@@ -89,13 +100,16 @@ FONTS="$KIT_ROOT/typst/assets/fonts"
 echo "▸ Rendering Mermaid diagrams..."
 node "$KIT_ROOT/scripts/render-mermaid.mjs"
 
-if [[ "$target" == "pdf" || "$target" == "all" ]]; then
+if [[ "$target" == "pdf" || "$target" == "print" || "$target" == "all" ]]; then
   echo "▸ Converting Markdown to Typst..."
   node "$KIT_ROOT/scripts/md-to-typst.mjs"
+fi
 
+# Reduce locale tag to the base language (pt-br → pt) for the typst lang param.
+TYPST_LANG="${lang%%-*}"
+
+if [[ "$target" == "pdf" || "$target" == "all" ]]; then
   echo "▸ Compiling PDF with Typst..."
-  # Reduce locale tag to the base language (pt-br → pt) for the typst lang param.
-  TYPST_LANG="${lang%%-*}"
   # --root = PROJECT_ROOT so the entry (which may live in a submodule) plus its
   # json("/book.config.json") and /typst/chapters.typ include resolve against
   # the book being built.
@@ -103,6 +117,34 @@ if [[ "$target" == "pdf" || "$target" == "all" ]]; then
     "$KIT_ROOT/typst/book.typ" "$PDF" \
     --input lang="$TYPST_LANG"
   echo "   PDF: $PDF ($(du -h "$PDF" | cut -f1))"
+fi
+
+if [[ "$target" == "print" ]]; then
+  echo "▸ Compiling print interior (no paper tint, even page count)..."
+  typst compile --root "$PROJECT_ROOT" --font-path "$FONTS" \
+    "$KIT_ROOT/typst/book.typ" "$PRINT_PDF" \
+    --input lang="$TYPST_LANG" --input print=true
+  # The physical page count (after padding) sizes the spine.
+  PAGES="$(typst eval --root "$PROJECT_ROOT" --font-path "$FONTS" \
+    --in "$KIT_ROOT/typst/book.typ" --input lang="$TYPST_LANG" --input print=true \
+    'query(<book-pages>).first().value')"
+  echo "   Interior: $PRINT_PDF ($PAGES pages, $(du -h "$PRINT_PDF" | cut -f1))"
+
+  has_cfg() { node -e 'let v=require(process.argv[1]);for(const k of process.argv[2].split(".")){v=v?.[k]}process.exit(v===undefined?1:0)' "$CFG" "$1"; }
+  has_cfg "languages.$CFG_LANG.cover.back" \
+    || echo "   ⚠ No languages.$CFG_LANG.cover.back in book.config.json: the back cover has no copy."
+
+  for binding in paperback hardcover; do
+    if [[ "$binding" == "hardcover" ]] && ! has_cfg "languages.$CFG_LANG.print.hardcover"; then
+      echo "   ↷ Hardcover cover skipped: add languages.$CFG_LANG.print.hardcover { width, height, spine, pages } from the KDP cover template for $PAGES pages."
+      continue
+    fi
+    out="$DIST/cover-$lang-$binding.pdf"
+    typst compile --root "$PROJECT_ROOT" --font-path "$FONTS" \
+      "$KIT_ROOT/typst/cover-print.typ" "$out" \
+      --input lang="$TYPST_LANG" --input binding="$binding" --input pages="$PAGES"
+    echo "   Cover ($binding): $out"
+  done
 fi
 
 # The cover feeds both the EPUB and the HTML landing page.
@@ -113,7 +155,9 @@ if [[ "$target" == "epub" || "$target" == "html" || "$target" == "all" ]]; then
     --input title="$COVER_TITLE" \
     --input subtitle="$COVER_SUBTITLE" \
     --input author="$COVER_AUTHOR" \
-    --input label="$COVER_LABEL"
+    --input label="$COVER_LABEL" \
+    --input monogram="$COVER_MONOGRAM" \
+    --input accent="$COVER_ACCENT"
   echo "   Cover: $COVER ($(du -h "$COVER" | cut -f1))"
 fi
 

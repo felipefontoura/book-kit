@@ -66,7 +66,14 @@ produces:
   theme, full-text search ([Pagefind](https://pagefind.app)), language switcher.
   Built for reading, not indexing (`noindex`, no robots.txt or sitemap). Checked against the
   source by `verify-html.mjs`, and zipped for offline use.
-- **Cover** — a KDP-compatible PNG rendered by Typst from your config strings.
+- **Cover** — a KDP-compatible PNG rendered by Typst from your config strings:
+  warm charcoal, a faint amber glow, a mono label, a serif title with an optional
+  amber-italic accent, and the author as a wordmark. Built to read at store
+  thumbnail size; the print cover uses the same front.
+- **Print files** (`--print`) — the KDP Print interior (no paper tint, so a
+  black & white book does not print a grey screen on every page; padded to an
+  even page count) and full-wrap covers (back + spine + front) for paperback
+  and hardcover, sized from that page count.
 
 The engine is consumed as a **git submodule**: every book inherits the same
 pipeline, typography, and fixes from one place. The only per-book files are
@@ -125,6 +132,7 @@ Typst where the engine is mounted. Outputs land in `dist/`.
 bash kit/scripts/build.sh --pdf          # fastest iteration on print layout
 bash kit/scripts/build.sh --epub         # EPUB + cover only
 bash kit/scripts/build.sh --html         # HTML site (dist/html/<lang>/), indexed + verified
+bash kit/scripts/build.sh --print        # KDP print interior + full-wrap covers (not in --all)
 SOURCE_MD=BOOK.en.md bash kit/scripts/build.sh   # force a source file
 git submodule update --remote kit        # pull engine updates later
 ```
@@ -171,13 +179,18 @@ language (`languages.pt`, `languages.en`, …):
 | `title`, `subtitle`, `eyebrow` | title page (Typst) + EPUB metadata |
 | `copyright` (array of paragraphs) | copyright page — one entry per paragraph |
 | `tocName` | table-of-contents heading |
-| `cover.{title,subtitle,label}` | the KDP cover (`cover.typ`) |
+| `cover.{title,subtitle,label}` | the KDP cover (`cover.typ`) and the front of the print cover |
+| `cover.accent` (optional) | the closing part of `cover.title` set in amber italic, the site's accent-word signature (e.g. `"Development"` in *Spec-Driven Development*) |
+| `cover.monogram` (optional) | a short mark (e.g. initials) boxed before the cover label, on the front and back. No monogram by default |
+| `cover.back` (optional) | back of the print cover: `{headline, blurb: [paragraphs], bio}`. The build fails if it does not fit above the barcode |
+| `print.hardcover` (optional) | `{width, height, spine, pages}` in inches, read off the KDP hardcover cover template for that edition's page count. KDP publishes no formula for the case spine; without this the hardcover cover is skipped, and the build fails if `pages` no longer matches the interior |
 | `preambleTitle`, `partsLabel`, `appendixLabel` | section labels + EPUB navigation |
 | `description`, `langTag` | EPUB metadata + HTML `<meta>` |
 | `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
 | top-level `html.downloads` (optional) | `[{kind: "pdf"|"epub"|"zip"|"page", url}]` or `{pt: [...], en: [...]}`, `{lang}` allowed: one entry is a "Download" link in the header and landing, several are a menu. **A link to the host that serves the edition is on-site: use `?ref=…`, never `utm_*`** (GA4 would start a new session with that source and overwrite the real one) |
 | top-level `html.chapters` (optional) | e.g. `[1, 2, "A"]`: publish only these chapters/appendices (a free preview); the rest stay listed, greyed out |
+| top-level `print.paper` (optional) | `white` (default), `cream`, `standard-color` or `premium-color`: the KDP paperback stock, which sets the spine width per page |
 | `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
 
 The template owns *layout*, the config owns *words*: to change the copyright
@@ -283,7 +296,7 @@ your-book/                     ← the book repo (content + one config)
 ├── typst/ · dist/             ← GENERATED (gitignore them)
 └── kit/                       ← this repo, as a git submodule
     ├── scripts/               build.sh · md-to-typst · md-to-epub · md-to-html · verify-html · render-mermaid · html/ · lib/
-    ├── typst/                 book.typ · template.typ · cover.typ · worksheet.typ
+    ├── typst/                 book.typ · template.typ · cover.typ · cover-front.typ · cover-print.typ · worksheet.typ
     └── typst/assets/fonts/    Newsreader · Inter · JetBrains Mono · Kalam (bundled, OFL)
 ```
 
@@ -301,7 +314,8 @@ Typst compiles with `--root PROJECT_ROOT`; kit modules are imported with
 
 The pipeline: `render-mermaid.mjs` (fences → SVGs + manifest) →
 `md-to-typst.mjs` (marked tokens → Typst chapters) → `typst compile` → PDF;
-in parallel, `cover.typ` → PNG, `md-to-epub.mjs` → EPUB 3 (with MathML
+in parallel, `cover.typ` → PNG (`--print`: `book.typ` with `print=true` →
+interior PDF, its page count → `cover-print.typ` → paperback/hardcover cover PDFs), `md-to-epub.mjs` → EPUB 3 (with MathML
 repair in `lib/epub-mathml-fix.mjs`) and `md-to-html.mjs` → HTML site →
 `pagefind` (search index) → `verify-html.mjs` (parity + link check).
 EPUB and HTML share `lib/prepare.mjs` (wikilinks, diagram substitution, title
@@ -340,7 +354,7 @@ series needs its own palette, fork or open an issue: exposing tokens through
 ## Roadmap
 
 - [ ] Expose design tokens (palette, type scale) in `book.config.json`
-- [ ] Full-wrap KDP cover (front + spine + back) sized by page count
+- [x] Full-wrap KDP cover (front + spine + back) sized by page count
 - [ ] More trim sizes beyond 6×9"
 - [ ] Built-in label packs for more languages
 - [ ] Optional chapter epigraphs
