@@ -13,7 +13,13 @@
 // on dark). Bright amber lives only on the cover (typst/cover.typ).
 
 // ─── Light-theme tokens ─────────────────────────────────────
-#let bg          = rgb("#FBF8F2")   // paper warm (slightly lifted from #ECE7DF to spare ink)
+// Print edition (--input print=true, build.sh --print): no paper tint. On
+// screen the warm paper is a page fill; on press that fill would print as a
+// tint over every page (a grey screen in black & white), so the print interior
+// leaves the page blank and cream stock supplies the warmth.
+#let print-edition = sys.inputs.at("print", default: "false") == "true"
+
+#let bg          = if print-edition { none } else { rgb("#FBF8F2") }   // paper warm (slightly lifted from #ECE7DF to spare ink)
 #let text-main   = rgb("#14120F")   // carvão warm — chapter title + body strong
 #let text-body   = rgb("#1A1206")   // text-on-amber colour, used as body ink (subtly warmer than pure carvão)
 #let text-secondary = rgb("#5D564B") // captions, leads
@@ -332,6 +338,20 @@
 
   counter(page).update(1)
   body-content
+
+  // A bound book has an even number of pages: the print edition ends on a
+  // blank verso when the text ends on a recto, so the page count the printer
+  // sees (and the spine width computed from it) is the real one. The final
+  // physical page count is exposed as <book-pages> for build.sh (typst query).
+  // The padding is decided from a marker placed before it (not from the
+  // context's own position, which the padding page would move).
+  [#metadata(none) <book-end>]
+  context {
+    let last = locate(<book-end>).page()
+    let pad = print-edition and calc.odd(last)
+    [#metadata(if pad { last + 1 } else { last }) <book-pages>]
+    if pad { page(header: none, numbering: none)[] }
+  }
 }
 
 // ─── TOC title ────────────────────────────────────────────────────
