@@ -114,36 +114,50 @@
   ))
 }
 
-// ─── Back: optional headline, blurb paragraphs and author bio ─────────
-// From languages.<lang>.cover.back { headline, blurb: [..], bio }. Margins and
-// the label line mirror the front panel. The text column stops above the
-// barcode band (KDP prints the ISBN barcode beside the spine), and the build
-// fails if the copy does not fit, rather than letting it run under the barcode.
+// ─── Back: category, headline, blurb, points and author bio ───────────
+// From languages.<lang>.cover.back { category, headline, blurb: [..],
+// pointsTitle, points: [..], bio }, every key optional. The top line is the
+// category (mono amber, like the front label), or the front label without one.
+// The text column stops above the barcode band (KDP prints the ISBN barcode
+// beside the spine), and the build fails if the copy does not fit, rather than
+// letting it run under the barcode.
 #let s = geo.panel-w / design-width
 #let back-x-pad = 0.55in * s
 #let back-top = 1.1in * s
 #let barcode-top = geo.barcode-bottom + 1.2in
 #let column-w = geo.panel-w - 2 * back-x-pad
 #let column-h = geo.panel-h - back-top - barcode-top - 0.3in
+#let body-tone = paper.mix((secondary, 40%))
 
 #let back-copy = {
-  label-line(L.cover.label, s, mark: L.cover.at("monogram", default: none))
-  v(0.45in)
+  label-line(back-cfg.at("category", default: L.cover.label), s, mark: L.cover.at("monogram", default: none))
+  v(0.4in)
   if "headline" in back-cfg {
     block({
-      set text(font: voice, size: 21pt, weight: 400, fill: paper, tracking: -0.02em)
-      set par(leading: 0.4em)
+      set text(font: voice, size: 22pt, weight: 400, fill: paper, tracking: -0.015em)
+      set par(leading: 0.42em)
       back-cfg.headline
     })
-    v(0.3in)
+    v(0.26in)
   }
   {
-    set text(size: 10.5pt, fill: paper.mix((secondary, 40%)))
+    set text(size: 10.5pt, fill: body-tone)
     set par(leading: 0.68em, spacing: 1.05em)
     for p in back-cfg.at("blurb", default: ()) { par(p) }
   }
+  if "points" in back-cfg {
+    v(0.16in)
+    set text(size: 10pt, fill: body-tone)
+    set par(leading: 0.62em)
+    if "pointsTitle" in back-cfg {
+      text(weight: 500, fill: paper, back-cfg.pointsTitle)
+      v(0.08in)
+    }
+    set list(marker: text(fill: amber)[–], indent: 0pt, body-indent: 0.55em, spacing: 0.55em)
+    list(..back-cfg.points)
+  }
   if "bio" in back-cfg {
-    v(0.2in)
+    v(0.24in)
     line(length: 0.8in, stroke: 1pt + amber)
     v(0.12in)
     block({

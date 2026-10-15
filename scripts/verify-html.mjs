@@ -11,7 +11,8 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { lexMarkdown } from './lib/chapter-splitter.mjs';
+import { lexMarkdown, langFromFilename, slugify as baseSlugify } from './lib/chapter-splitter.mjs';
+import { matterPages } from './lib/matter.mjs';
 import { PROJECT_ROOT } from './lib/config.mjs';
 import { resolveSource, loadMeta, loadDiagramManifest, stripTitleBlock, buildSections } from './lib/prepare.mjs';
 
@@ -25,6 +26,9 @@ const manifest = loadDiagramManifest();
 // Count against the original source: mermaid blocks must stay tokens.
 const raw = readFileSync(MD, 'utf8');
 const sections = buildSections(raw, { baseLang, meta, path: MD });
+
+// Page file names as md-to-html writes them.
+const pageFile = (title) => `${baseSlugify(title.replace(/['’]/g, ''))}.html`;
 
 const failures = [];
 const fail = (where, msg) => failures.push(`${where}: ${msg}`);
@@ -71,7 +75,7 @@ for (const s of sections) {
   } else if (s.kind === 'frontmatter') {
     const text = stripTitleBlock(s.sourceText);
     if (!text.trim()) continue;
-    file = files.find((f) => !/^(index|copyright|direitos|part|parte|chapter|capitulo|appendix|apendice)/.test(f));
+    file = files.find((f) => f === pageFile(meta.preambleTitle));
     expected = count(lexMarkdown(text));
   } else continue;
 
@@ -82,6 +86,20 @@ for (const s of sections) {
   comparedPages++;
   for (const k of Object.keys(expected)) {
     if (expected[k] !== got[k]) fail(`${label} (${file})`, `${k}: source ${expected[k]} ≠ html ${got[k]}`);
+  }
+}
+
+// Back-matter pages (backmatter/*.md): the page's own "# Title" is its <h1>,
+// the rest is compared like a chapter body.
+for (const p of matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD))) {
+  const file = pageFile(p.title);
+  if (!files.includes(file)) { fail(`backmatter ${p.file}`, 'no HTML page found'); continue; }
+  const body = p.md.replace(/^\s*#\s+[^\n]+\n/, '');
+  const expected = count(lexMarkdown(body));
+  const got = htmlCounts(read(file));
+  comparedPages++;
+  for (const k of Object.keys(expected)) {
+    if (expected[k] !== got[k]) fail(`backmatter ${p.file} (${file})`, `${k}: source ${expected[k]} ≠ html ${got[k]}`);
   }
 }
 

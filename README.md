@@ -182,13 +182,14 @@ language (`languages.pt`, `languages.en`, …):
 | `cover.{title,subtitle,label}` | the KDP cover (`cover.typ`) and the front of the print cover |
 | `cover.accent` (optional) | the closing part of `cover.title` set in amber italic, the site's accent-word signature (e.g. `"Development"` in *Spec-Driven Development*) |
 | `cover.monogram` (optional) | a short mark (e.g. initials) boxed before the cover label, on the front and back. No monogram by default |
-| `cover.back` (optional) | back of the print cover: `{headline, blurb: [paragraphs], bio}`. The build fails if it does not fit above the barcode |
+| `cover.back` (optional) | back of the print cover: `{category, headline, blurb: [paragraphs], pointsTitle, points: [bullets], bio}`, every key optional. The build fails if it does not fit above the barcode |
 | `print.hardcover` (optional) | `{width, height, spine, pages}` in inches, read off the KDP hardcover cover template for that edition's page count. KDP publishes no formula for the case spine; without this the hardcover cover is skipped, and the build fails if `pages` no longer matches the interior |
 | `preambleTitle`, `partsLabel`, `appendixLabel` | section labels + EPUB navigation |
 | `description`, `langTag` | EPUB metadata + HTML `<meta>` |
 | `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |
 | top-level `author`, `publisher` | title page, copyright, cover, EPUB |
 | top-level `html.downloads` (optional) | `[{kind: "pdf"|"epub"|"zip"|"page", url}]` or `{pt: [...], en: [...]}`, `{lang}` allowed: one entry is a "Download" link in the header and landing, several are a menu. **A link to the host that serves the edition is on-site: use `?ref=…`, never `utm_*`** (GA4 would start a new session with that source and overwrite the real one) |
+| top-level `html.onSite` (optional) | `{host, ref}`: the host serving the HTML edition. Links to it lose their `utm_*` in the HTML (they stay in the PDF/EPUB, where they are off-site) and carry `?ref=` |
 | top-level `html.chapters` (optional) | e.g. `[1, 2, "A"]`: publish only these chapters/appendices (a free preview); the rest stay listed, greyed out |
 | top-level `print.paper` (optional) | `white` (default), `cream`, `standard-color` or `premium-color`: the KDP paperback stock, which sets the spine width per page |
 | `kit.dir` | where the engine is mounted (`"kit"` as a submodule, `""` single-repo) |
@@ -283,6 +284,21 @@ frontmatter/
 
 Each becomes its own unnumbered, header-less page between the copyright page
 and the TOC, never listed in the TOC.
+
+Back-matter pages (an "About the author", a colophon) follow the same
+convention in `backmatter/`, but are real pages of the book: they come after
+the last appendix, a page's own `# Title` opens it on a recto, and it is listed
+in the PDF, EPUB and HTML contents.
+
+```text
+backmatter/
+  01-about-the-author.en.md
+  01-sobre-o-autor.pt-BR.md
+  author.jpg              # ![Author](author.jpg "42%") — path relative to the .md, title = width
+```
+
+Images in any Markdown (source or matter pages) are local paths relative to the
+file that holds them, as on GitHub; a title that is a percentage sets the width.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

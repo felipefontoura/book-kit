@@ -12,9 +12,10 @@
 // Source of truth: BOOK.{pt-BR,en,es}.md. Re-run after every MD edit.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { EPub } from '@lesjoursfr/html-to-epub';
 import { langFromFilename, frontmatterFiles, labelsFor } from './lib/chapter-splitter.mjs';
+import { matterPages, rewriteImages } from './lib/matter.mjs';
 import { fixEpubMathml } from './lib/epub-mathml-fix.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
 import {
@@ -55,7 +56,7 @@ const content = [];
 
 for (const s of sections) {
   if (s.kind === 'frontmatter') {
-    const html = marked.parse(stripTitleBlock(s.sourceText));
+    const html = rewriteImages(marked.parse(stripTitleBlock(s.sourceText)), dirname(MD), (abs) => abs);
     if (html.trim()) {
       content.push({ title: s.displayTitle, data: `<div>${html}</div>` });
     }
@@ -76,11 +77,21 @@ for (const s of sections) {
   if (s.kind === 'chapter' || s.kind === 'appendix') {
     content.push({
       title: s.shortTitle ?? s.displayTitle,
-      data: `<div>${marked.parse(promoteHeading(s.sourceText))}</div>`,
+      data: `<div>${rewriteImages(marked.parse(promoteHeading(s.sourceText)), dirname(MD), (abs) => abs)}</div>`,
     });
     continue;
   }
 }
+
+// ─── Back matter (optional MD pages, lib/matter.mjs) ─────────────────
+// After the last appendix, listed in the reader's TOC. Local images are
+// embedded from their absolute path, like the diagrams.
+const bmSections = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD)).map((p) => ({
+  title: p.title,
+  data: `<div class="backmatter">${rewriteImages(marked.parse(p.md), p.dir, (abs) => abs)}</div>`,
+}));
+content.push(...bmSections);
+if (bmSections.length) console.log(`▸ Added ${bmSections.length} back-matter page(s).`);
 
 // ─── Front matter (optional MD pages) ────────────────────────────────
 // Placed before every other section AND kept out of the reader's TOC via

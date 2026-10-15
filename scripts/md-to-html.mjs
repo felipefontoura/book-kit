@@ -20,6 +20,10 @@
 //                `?ref=` and never `utm_*`: an on-site UTM overwrites GA4's session source.
 //                One entry is a plain "Download" link in the
 //                header and on the landing page; several are a menu and buttons
+//   onSite       { "host": "example.com", "ref": "my-book-read" }: the host that serves
+//                this edition. Links to it in the text (written with UTMs for the PDF and
+//                EPUB, where they are off-site) lose their utm_* here and carry ?ref=
+//                instead, so a click inside the edition keeps GA4's session source
 //
 // The site is deliberately not tuned for search engines: every page carries
 // noindex/nofollow (and no robots.txt, so nothing advertises where it lives).
@@ -27,7 +31,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { resolve } from 'node:path';
+import { resolve, dirname, basename } from 'node:path';
 import { frontmatterFiles, labelsFor, langFromFilename, baseLangFromFilename, slugify as baseSlugify } from './lib/chapter-splitter.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
 import {
@@ -35,6 +39,7 @@ import {
   escapeHtml, makeMarked, buildSections,
 } from './lib/prepare.mjs';
 import { createCodeRenderer } from './lib/highlight.mjs';
+import { matterPages, rewriteImages } from './lib/matter.mjs';
 import { buildSiteFonts } from './lib/site-fonts.mjs';
 import { uiFor } from './html/ui.mjs';
 
@@ -113,6 +118,13 @@ const fmPages = frontmatterFiles(FM_DIR, langFromFilename(MD)).map((f) => ({
   md: readFileSync(resolve(FM_DIR, f), 'utf8'),
 }));
 pages.unshift(...fmPages);
+
+// Optional back-matter pages (backmatter/*.md, lib/matter.mjs): after the last
+// appendix, before the copyright page.
+const bmPages = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD)).map((p) => ({
+  kind: 'back', key: `back-${p.file}`, file: `${slugify(p.title)}.html`, title: p.title, md: p.md, dir: p.dir,
+}));
+pages.splice(pages.findIndex((p) => p.kind === 'copyright'), 0, ...bmPages);
 
 const isIncluded = (p) => {
   if (!only) return true;
@@ -201,6 +213,16 @@ function finishHtml(html) {
     .replace(/<a href="(https?:\/\/[^"]+)"/g, '<a rel="noopener" href="$1"');
 }
 
+// A local image goes to assets/ under a content-hashed name (long-cacheable, like
+// the cover); the page links it there.
+function siteImage(abs) {
+  const ext = basename(abs).replace(/^[^.]*/, '');
+  const name = `img.${createHash('sha1').update(readFileSync(abs)).digest('hex').slice(0, 8)}${ext}`;
+  mkdirSync(resolve(OUT, 'assets'), { recursive: true });
+  copyFileSync(abs, resolve(OUT, 'assets', name));
+  return `assets/${name}`;
+}
+
 // Strip the trailing `---` that separated sections in the single-file source.
 const dropTrailingHr = (t) => t.replace(/\n-{3,}\s*$/, '\n');
 
@@ -216,8 +238,8 @@ function renderBody(page) {
     md = stripTitleBlock(s.sourceText);
     // The source marks this heading with a bold line; the page H1 replaces it.
     md = md.replace(/^\s*\*\*([^*\n]+)\*\*\s*\n/, (m, t) => (t.trim().toLowerCase() === meta.preambleTitle.toLowerCase() ? '' : m));
-  } else if (page.kind === 'front') {
-    // A front-matter page may open with its own "# Title": that is the page's <h1>.
+  } else if (page.kind === 'front' || page.kind === 'back') {
+    // A front/back-matter page may open with its own "# Title": that is the page's <h1>.
     const own = page.md.match(/^\s*#\s+([^\n]+)\n/);
     h1 = own ? marked.parseInline(own[1]) : escapeHtml(page.title);
     md = own ? page.md.slice(own[0].length) : page.md;
@@ -232,6 +254,7 @@ function renderBody(page) {
   }
 
   let body = md ? finishHtml(marked.parse(dropTrailingHr(md))) : '';
+  body = onSiteLinks(rewriteImages(body, page.dir ?? dirname(MD), siteImage));
   if (page.kind === 'part') {
     body = `<ol class="part-list">${page.chapters.map((c) => {
       const inner = `<span class="num">${escapeHtml(c.num)}</span>${escapeHtml(c.name)}`;
@@ -241,13 +264,34 @@ function renderBody(page) {
   return { eyebrow, h1, body, headings: ctx.headings };
 }
 
-// Copyright page from the config lines, bare domains turned into links.
-const linkify = (line) => escapeHtml(line).replace(
+// Copyright page from the config lines: Markdown links `[text](url)` as they
+// are, bare domains in the rest turned into links.
+const linkify = (line) => line.split(/(\[[^\]]+\]\([^)]+\))/).map((part) => {
+  const md = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+  return md ? `<a rel="noopener" href="${escapeHtml(md[2])}">${escapeHtml(md[1])}</a>` : linkifyBare(part);
+}).join('');
+const linkifyBare = (line) => escapeHtml(line).replace(
   /\b((?:[a-z0-9-]+\.)+(?:com|org|io|dev|net|br)(?:\/[^\s<]*)?)/gi,
   (m) => { const url = m.replace(/[.,;:)]+$/, ''); return `<a rel="noopener" href="https://${url}">${url}</a>${m.slice(url.length)}`; },
 );
 function renderCopyright() {
-  return { eyebrow: '', h1: escapeHtml(ui.copyright), body: meta.copyright.map((l) => `<p>${linkify(l)}</p>`).join('\n'), headings: [] };
+  return { eyebrow: '', h1: escapeHtml(ui.copyright), body: onSiteLinks(meta.copyright.map((l) => `<p>${linkify(l)}</p>`).join('\n')), headings: [] };
+}
+
+// html.onSite: a link to the host serving this edition is on-site here, so it
+// drops its utm_* (written for the PDF/EPUB) and carries ?ref= instead.
+const onSite = htmlCfg.onSite?.host ? htmlCfg.onSite : null;
+function onSiteLinks(html) {
+  if (!onSite) return html;
+  const host = onSite.host.replace(/^www\./, '');
+  return html.replace(/href="(https?:\/\/[^"]+)"/g, (m, raw) => {
+    let url;
+    try { url = new URL(raw.replace(/&amp;/g, '&')); } catch { return m; }
+    if (url.hostname.replace(/^www\./, '') !== host) return m;
+    for (const k of [...url.searchParams.keys()]) if (k.startsWith('utm_')) url.searchParams.delete(k);
+    if (onSite.ref && !url.searchParams.has('ref')) url.searchParams.set('ref', onSite.ref);
+    return `href="${escapeHtml(url.toString())}"`;
+  });
 }
 
 // ─── Page chrome ────────────────────────────────────────────────────
@@ -284,6 +328,8 @@ function tocHtml(current, cls = 'toc') {
     out.push(`<div class="toc-group"><span class="toc-label">${escapeHtml(plan.labels.appendices[0])}</span>` +
       `<ul>${apps.map((p) => tocItem(p, current)).join('')}</ul></div>`);
   }
+  const back = pages.filter((p) => p.kind === 'back');
+  if (back.length) out.push(`<div class="toc-group"><ul>${back.map((p) => tocItem(p, current)).join('')}</ul></div>`);
   const cp = pages.find((p) => p.kind === 'copyright');
   out.push(`<div class="toc-group"><ul>${tocItem(cp, current, false)}</ul></div>`, '</nav>');
   return out.join('\n');
