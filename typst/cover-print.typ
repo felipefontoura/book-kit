@@ -10,12 +10,13 @@
 // GDTKFJPNQCBTMRV6):
 //   paperback  0.125 bleed on every outer edge; spine = pages × the paper's
 //              per-page thickness. Width = bleed + back + spine + front + bleed.
-//   hardcover  0.51 wrap on every outer edge (folds over the board), 0.4 hinge
-//              beside the spine, safe area 0.635 from the file edge. KDP gives
-//              no formula for the case spine, so width, height and spine come
-//              from the KDP cover template for the exact page count
-//              (book.config.json → languages.<lang>.print.hardcover: each
-//              edition has its own page count).
+//   hardcover  0.591 wrap on every outer edge (folds over the board), 0.394
+//              hinge beside the spine, 0.125 safe margin inside the fold. KDP
+//              gives no formula for the case spine, so width, height and spine
+//              come from the KDP cover calculator (kdp.amazon.com/cover-calculator)
+//              for the exact page count (book.config.json →
+//              languages.<lang>.print.hardcover: each edition has its own page
+//              count; `wrap` overrides the 0.591 if KDP changes it).
 // The barcode box (2 × 1.2) is left empty: KDP prints the ISBN barcode in the
 // lower corner of the back cover beside the spine.
 
@@ -56,7 +57,7 @@
   let hc = L.at("print", default: (:)).at("hardcover", default: none)
   assert(hc != none, message: "hardcover needs languages." + lang + ".print.hardcover { width, height, spine, pages } from the KDP cover template")
   assert(int(hc.pages) == pages, message: "languages." + lang + ".print.hardcover was taken from the KDP template for " + str(hc.pages) + " pages, but the interior has " + str(pages) + ": download a new template and update width/height/spine/pages")
-  let edge = 0.51in
+  let edge = hc.at("wrap", default: 0.591) * 1in
   let width = hc.width * 1in
   let height = hc.height * 1in
   let spine = hc.spine * 1in
@@ -64,8 +65,8 @@
     edge: edge, spine: spine,
     panel-w: (width - spine - 2 * edge) / 2, panel-h: height - 2 * edge,
     width: width, height: height,
-    // 0.635 from the file edge = 0.125 inside the fold.
-    safe: 0.125in, hinge: 0.4in, barcode-bottom: 0.76in - edge,
+    // Calculator: margin 0.125 inside the fold, barcode 0.375 off the bottom trim.
+    safe: 0.125in, hinge: 0.394in, barcode-bottom: 0.375in,
   )
 } else {
   panic("binding must be paperback or hardcover, got " + binding)
