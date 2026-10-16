@@ -183,7 +183,7 @@ language (`languages.pt`, `languages.en`, …):
 | `cover.accent` (optional) | the closing part of `cover.title` set in amber italic, the site's accent-word signature (e.g. `"Development"` in *Spec-Driven Development*) |
 | `cover.monogram` (optional) | a short mark (e.g. initials) boxed before the cover label, on the front and back. No monogram by default |
 | `cover.back` (optional) | back of the print cover: `{category, headline, blurb: [paragraphs], pointsTitle, points: [bullets], bio}`, every key optional. The build fails if it does not fit above the barcode |
-| `print.hardcover` (optional) | `{width, height, spine, pages}` in inches, read off the KDP hardcover cover template for that edition's page count. KDP publishes no formula for the case spine; without this the hardcover cover is skipped, and the build fails if `pages` no longer matches the interior |
+| `print.hardcover` (optional) | `{width, height, spine, pages}` in inches ("Full Cover" width/height and "Spine" width), read off the KDP cover calculator (kdp.amazon.com/cover-calculator: Hardcover, the paper, 6 x 9, that edition's page count); optional `wrap` (default 0.591). KDP publishes no formula for the case spine; without this the hardcover cover is skipped, and the build fails if `pages` no longer matches the interior |
 | `preambleTitle`, `partsLabel`, `appendixLabel` | section labels + EPUB navigation |
 | `description`, `langTag` | EPUB metadata + HTML `<meta>` |
 | `ui` (optional object) | overrides for the HTML chrome strings (see `scripts/html/ui.mjs`) |

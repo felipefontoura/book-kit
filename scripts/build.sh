@@ -136,7 +136,7 @@ if [[ "$target" == "print" ]]; then
 
   for binding in paperback hardcover; do
     if [[ "$binding" == "hardcover" ]] && ! has_cfg "languages.$CFG_LANG.print.hardcover"; then
-      echo "   ↷ Hardcover cover skipped: add languages.$CFG_LANG.print.hardcover { width, height, spine, pages } from the KDP cover template for $PAGES pages."
+      echo "   ↷ Hardcover cover skipped: add languages.$CFG_LANG.print.hardcover { width, height, spine, pages } from kdp.amazon.com/cover-calculator (Hardcover, $PAGES pages)."
       continue
     fi
     out="$DIST/cover-$lang-$binding.pdf"
