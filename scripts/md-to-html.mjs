@@ -40,6 +40,7 @@ import {
 } from './lib/prepare.mjs';
 import { createCodeRenderer } from './lib/highlight.mjs';
 import { matterPages, rewriteImages } from './lib/matter.mjs';
+import { readMarkdown } from './lib/editions.mjs';
 import { buildSiteFonts } from './lib/site-fonts.mjs';
 import { uiFor } from './html/ui.mjs';
 
@@ -105,7 +106,7 @@ function planPages(mdPath, rawSrc) {
   return { pages, meta: m, labels: lb, ui: u, langTag: Lx.langTag };
 }
 
-const rawSource = readFileSync(MD, 'utf8');
+const rawSource = readMarkdown(MD, 'html');
 const plan = planPages(MD, rawSource);
 const pages = plan.pages;
 
@@ -115,13 +116,13 @@ const fmTitle = (f) => f.replace(/\.[A-Za-z]{2}(?:-[A-Za-z]{2})?\.md$/, '').repl
   .replace(/^\d+[-_]/, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const fmPages = frontmatterFiles(FM_DIR, langFromFilename(MD)).map((f) => ({
   kind: 'front', key: `front-${f}`, file: `${slugify(fmTitle(f))}.html`, title: fmTitle(f),
-  md: readFileSync(resolve(FM_DIR, f), 'utf8'),
+  md: readMarkdown(resolve(FM_DIR, f), 'html'),
 }));
 pages.unshift(...fmPages);
 
 // Optional back-matter pages (backmatter/*.md, lib/matter.mjs): after the last
 // appendix, before the copyright page.
-const bmPages = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD)).map((p) => ({
+const bmPages = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD), 'html').map((p) => ({
   kind: 'back', key: `back-${p.file}`, file: `${slugify(p.title)}.html`, title: p.title, md: p.md, dir: p.dir,
 }));
 pages.splice(pages.findIndex((p) => p.kind === 'copyright'), 0, ...bmPages);
@@ -140,7 +141,7 @@ const alternates = readdirSync(PROJECT_ROOT)
   .map((f) => {
     const p = resolve(PROJECT_ROOT, f);
     const lang = (langFromFilename(p) ?? '').toLowerCase();
-    const alt = planPages(p, readFileSync(p, 'utf8'));
+    const alt = planPages(p, readMarkdown(p, 'html'));
     const name = new Intl.DisplayNames([alt.langTag], { type: 'language' }).of(alt.langTag.split('-')[0]);
     return { lang, langTag: alt.langTag, name: name.charAt(0).toUpperCase() + name.slice(1), plan: alt };
   });

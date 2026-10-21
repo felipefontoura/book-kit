@@ -13,6 +13,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { lexMarkdown, langFromFilename, slugify as baseSlugify } from './lib/chapter-splitter.mjs';
 import { matterPages } from './lib/matter.mjs';
+import { readMarkdown } from './lib/editions.mjs';
 import { PROJECT_ROOT } from './lib/config.mjs';
 import { resolveSource, loadMeta, loadDiagramManifest, stripTitleBlock, buildSections } from './lib/prepare.mjs';
 
@@ -23,8 +24,8 @@ if (!existsSync(SITE)) { console.error(`✗ ${SITE} not found. Build the HTML fi
 const { cfg, meta } = loadMeta(baseLang);
 const only = Array.isArray(cfg.html?.chapters) ? cfg.html.chapters.map((c) => String(c).toUpperCase()) : null;
 const manifest = loadDiagramManifest();
-// Count against the original source: mermaid blocks must stay tokens.
-const raw = readFileSync(MD, 'utf8');
+// Count against the source as the html edition sees it (mermaid blocks stay tokens).
+const raw = readMarkdown(MD, 'html');
 const sections = buildSections(raw, { baseLang, meta, path: MD });
 
 // Page file names as md-to-html writes them.
@@ -91,7 +92,7 @@ for (const s of sections) {
 
 // Back-matter pages (backmatter/*.md): the page's own "# Title" is its <h1>,
 // the rest is compared like a chapter body.
-for (const p of matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD))) {
+for (const p of matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD), 'html')) {
   const file = pageFile(p.title);
   if (!files.includes(file)) { fail(`backmatter ${p.file}`, 'no HTML page found'); continue; }
   const body = p.md.replace(/^\s*#\s+[^\n]+\n/, '');

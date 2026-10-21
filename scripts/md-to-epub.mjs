@@ -16,6 +16,7 @@ import { resolve, dirname } from 'node:path';
 import { EPub } from '@lesjoursfr/html-to-epub';
 import { langFromFilename, frontmatterFiles, labelsFor } from './lib/chapter-splitter.mjs';
 import { matterPages, rewriteImages } from './lib/matter.mjs';
+import { readMarkdown } from './lib/editions.mjs';
 import { fixEpubMathml } from './lib/epub-mathml-fix.mjs';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
 import {
@@ -38,7 +39,7 @@ if (!existsSync(COVER)) {
 }
 
 // ─── Load + clean source ────────────────────────────────────────────
-const { src, diagrams } = prepareMarkdown(readFileSync(MD, 'utf8'), {
+const { src, diagrams } = prepareMarkdown(readMarkdown(MD, 'epub'), {
   manifest: loadDiagramManifest(),
   figure: (entry, n) => {
     const absPath = resolve(PROJECT_ROOT, 'typst', entry.file);
@@ -86,7 +87,7 @@ for (const s of sections) {
 // ─── Back matter (optional MD pages, lib/matter.mjs) ─────────────────
 // After the last appendix, listed in the reader's TOC. Local images are
 // embedded from their absolute path, like the diagrams.
-const bmSections = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD)).map((p) => ({
+const bmSections = matterPages(resolve(PROJECT_ROOT, 'backmatter'), langFromFilename(MD), 'epub').map((p) => ({
   title: p.title,
   data: `<div class="backmatter">${rewriteImages(marked.parse(p.md), p.dir, (abs) => abs)}</div>`,
 }));
@@ -106,7 +107,7 @@ function fmTitle(f) {
 const FM_DIR = resolve(PROJECT_ROOT, 'frontmatter');
 const fmSections = frontmatterFiles(FM_DIR, langFromFilename(MD)).map((f) => ({
   title: fmTitle(f),
-  data: `<div class="frontmatter">${marked.parse(readFileSync(resolve(FM_DIR, f), 'utf8'))}</div>`,
+  data: `<div class="frontmatter">${marked.parse(readMarkdown(resolve(FM_DIR, f), 'epub'))}</div>`,
   beforeToc: true,
 }));
 content.unshift(...fmSections);

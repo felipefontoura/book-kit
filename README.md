@@ -40,6 +40,7 @@ books as a git submodule.
 - [Math](#math)
 - [Worksheets](#worksheets)
 - [Front-matter pages](#front-matter-pages)
+- [Edition-only blocks](#edition-only-blocks)
 - [Architecture](#architecture)
 - [Visual system](#visual-system)
 - [Roadmap](#roadmap)
@@ -302,6 +303,37 @@ file that holds them, as on GitHub; a title that is a percentage sets the width.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Edition-only blocks
+
+The same `BOOK.<lang>.md` is read on GitHub and built into the PDF, EPUB and
+HTML. When a passage belongs to some of those editions only — a "get the PDF"
+note for people reading the repo, which a reader of the PDF doesn't need —
+wrap it in HTML comments. GitHub hides comments, so the markers never show:
+
+```md
+<!-- only: md -->
+> [!TIP]
+> Reading on GitHub? Get the PDF and EPUB: [example.com/book](https://example.com/book/)
+<!-- /only -->
+
+<!-- only: pdf epub html
+Hidden on GitHub, printed in the built editions.
+-->
+```
+
+- **`<!-- only: … -->` … `<!-- /only -->`** — visible on GitHub; kept in the
+  built editions listed. `md` alone means GitHub only.
+- **`<!-- only: …` … `-->`** — the content sits inside the comment, so GitHub
+  hides it; the editions listed unwrap it.
+
+Editions: `md` (the raw file on GitHub), `pdf` (screen and print — the print
+interior compiles the same pages), `epub`, `html`. Blocks work in the source
+and in front/back-matter pages, hold any Markdown but a Mermaid diagram
+(figures are numbered once for every edition), and don't nest. A malformed,
+unclosed or nested block fails the build with its file and line.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Architecture
 
 ```text
@@ -335,7 +367,9 @@ interior PDF, its page count → `cover-print.typ` → paperback/hardcover cover
 repair in `lib/epub-mathml-fix.mjs`) and `md-to-html.mjs` → HTML site →
 `pagefind` (search index) → `verify-html.mjs` (parity + link check).
 EPUB and HTML share `lib/prepare.mjs` (wikilinks, diagram substitution, title
-block, math), so both formats see exactly the same content.
+block, math), so both formats see exactly the same content. Before any of
+that, every Markdown read goes through `lib/editions.mjs`, which keeps or drops
+the edition-only blocks for the edition being built.
 
 The HTML site is plain files with relative links: pages are flat `.html`
 (no directory-index rules needed), so it works from `file://`, any static host
