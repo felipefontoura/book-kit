@@ -9,6 +9,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { KIT_ROOT, PROJECT_ROOT } from './lib/config.mjs';
+import { readMarkdown } from './lib/editions.mjs';
 
 // Source + generated diagrams live in the project; the toolchain (mmdc, configs)
 // lives in the kit.
@@ -131,7 +132,9 @@ function injectSharedClasses(code) {
   return lines.join('\n');
 }
 
-const src = readFileSync(MD, 'utf8');
+// Diagrams can't sit inside an edition-only block (lib/editions.mjs), so every
+// edition has the same figures; reading as one of them validates the blocks.
+const src = readMarkdown(MD, 'pdf');
 
 // Match fenced mermaid blocks. Tolerate optional whitespace after the fence.
 const RE = /```mermaid[ \t]*\r?\n([\s\S]*?)\r?\n```/g;

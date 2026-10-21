@@ -10,17 +10,18 @@
 // Markdown file that holds it (as on GitHub); an optional title that is a
 // percentage sets the width.
 
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { frontmatterFiles } from './chapter-splitter.mjs';
+import { readMarkdown } from './editions.mjs';
 
 const fileTitle = (f) => f.replace(/\.[A-Za-z]{2}(?:-[A-Za-z]{2})?\.md$/, '').replace(/\.md$/, '')
   .replace(/^\d+[-_]/, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// [{ file, md, title, dir }] for every page in `dir`, in reading order.
-export function matterPages(dir, langTag) {
+// [{ file, md, title, dir }] for every page in `dir`, in reading order, as
+// `edition` (lib/editions.mjs) sees it.
+export function matterPages(dir, langTag, edition) {
   return frontmatterFiles(dir, langTag).map((file) => {
-    const md = readFileSync(resolve(dir, file), 'utf8');
+    const md = readMarkdown(resolve(dir, file), edition);
     const own = md.match(/^\s*#\s+([^\n]+)\n/);
     return { file, md, title: own ? own[1].trim() : fileTitle(file), dir };
   });

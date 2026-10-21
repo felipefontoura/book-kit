@@ -100,3 +100,14 @@ note: Fill one of these per discovery call.
 
 An appendix is an H2 in the form `Appendix A: Title` — uppercase letter, colon.
 It is numbered by letter and listed after the parts in the table of contents.
+
+<!-- only: md -->
+> [!TIP]
+> Reading this on GitHub? This note is for you: the PDF, EPUB and HTML
+> editions leave it out.
+<!-- /only -->
+
+<!-- only: pdf epub html
+This paragraph is the other way around: hidden on GitHub, printed in the
+built editions. Both blocks are edition-only blocks.
+-->
